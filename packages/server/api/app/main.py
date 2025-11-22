@@ -9,6 +9,7 @@ from .src.routes.supabase_connection import router as supabase_connection_router
 from .src.routes.fintoc import router as fintoc_router
 from .src.routes.token_gatherer import router as token_gatherer_router
 from .src.routes.agent_streaming import router as agent_streaming_router
+from .src.routes.movements import router as movements_router
 
 app = FastAPI()
 
@@ -18,7 +19,7 @@ app.add_middleware(
     allow_origins=["http://localhost:3000"],  # Next.js dev server
     allow_credentials=True,
     allow_methods=["*"],
-    allow_headers=["*"],
+    allow_headers=["*"]
 )
 
 # Include database routes
@@ -26,6 +27,7 @@ app.include_router(supabase_connection_router, prefix="/supabase_connection", ta
 app.include_router(fintoc_router, prefix="/fintoc", tags=["fintoc"])
 app.include_router(token_gatherer_router, prefix="/token_gatherer", tags=["token_gatherer"])
 app.include_router(agent_streaming_router, tags=["agent"])
+app.include_router(movements_router, prefix="/movements", tags=["movements"])
 
 @app.get("/")
 def read_root():
