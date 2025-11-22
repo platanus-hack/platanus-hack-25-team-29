@@ -1,17 +1,11 @@
 import math
 import json
-import sys
 from datetime import datetime
-from pathlib import Path
 from typing import Any
 
 from sqlalchemy import text
 
-# Add parent directory to path to allow importing from api.app
-# This assumes the script is run from its location or packages/server/agent/
-# We need to add packages/server to path
-sys.path.append(str(Path(__file__).parent.parent))
-from api.app.db import SessionLocal
+from app.db import SessionLocal
 
 from claude_agent_sdk import (
     tool,
