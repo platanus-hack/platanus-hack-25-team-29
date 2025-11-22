@@ -25,16 +25,9 @@ ENV PORT=8080
 EXPOSE 8080
 
 RUN echo '#!/bin/bash\n\
-set -e\n\
-# Force kill any existing ngrok processes\n\
-pkill -9 ngrok 2>/dev/null || true\n\
-killall -9 ngrok 2>/dev/null || true\n\
-sleep 2\n\
-# Start FastAPI in background\n\
 uv run uvicorn app.main:app --host 0.0.0.0 --port $PORT &\n\
 sleep 3\n\
-# Start ngrok (this becomes the main process)\n\
-exec ngrok http $PORT --log stdout\n\
+ngrok http $PORT --log stdout\n\
 ' > /app/start.sh && chmod +x /app/start.sh
 
 # Run both services
