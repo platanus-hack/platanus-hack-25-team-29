@@ -4,6 +4,8 @@
  */
 
 import React, { useState, useEffect } from 'react';
+import { Button } from '@/components/ui/button';
+import { Wallet, AlertCircle } from 'lucide-react';
 
 // Extend Window interface for Fintoc SDK
 declare global {
@@ -48,7 +50,7 @@ interface FintocWidgetProps {
 }
 
 const FintocWidget: React.FC<FintocWidgetProps> = ({
-    apiBaseUrl = 'https://platanus-grupo29-681510028004.us-central1.run.app/token_gatherer',
+    apiBaseUrl = 'https://platanus-grupo29-681510028004.us-central1.run.app/api/fintoc',
     userId,
     onSuccess,
     onError
@@ -135,19 +137,19 @@ const FintocWidget: React.FC<FintocWidgetProps> = ({
     };
 
     const fetchWidgetConfig = async (): Promise<WidgetConfigResponse> => {
-        const url = userId 
+        const url = userId
             ? `${apiBaseUrl}/widget-config?user_id=${userId}`
             : `${apiBaseUrl}/widget-config`;
-        
+
         console.log('📡 Fetching widget config from:', url);
-        
+
         const response = await fetch(url);
-        
+
         if (!response.ok) {
             const errorData = await response.json().catch(() => ({}));
             throw new Error(errorData.detail || 'Failed to fetch widget configuration');
         }
-        
+
         return response.json();
     };
 
@@ -196,18 +198,61 @@ const FintocWidget: React.FC<FintocWidgetProps> = ({
                 publicKey: config.public_key,
                 webhookUrl: config.webhook_url,
                 country: config.country,
-                onSuccess: (link: any) => {
+                onSuccess: async (link: any) => {
                     console.log('✅ Widget success callback triggered:', link);
                     setWidgetInstance(null);
                     setError('');
+
+                    // Extract link token from the response
+                    const linkToken = link?.link_token || link?.token;
                     
-                    // Call parent success callback
-                    if (onSuccess) {
-                        onSuccess();
+                    if (linkToken) {
+                        try {
+                            console.log('📤 Sending link token to backend...');
+                            
+                            // Send link token to backend
+                            const saveUrl = userId
+                                ? `${apiBaseUrl}/save-link?user_id=${userId}`
+                                : `${apiBaseUrl}/save-link`;
+                            
+                            const response = await fetch(saveUrl, {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                },
+                                body: JSON.stringify({
+                                    link_token: linkToken,
+                                    user_id: userId
+                                })
+                            });
+
+                            if (!response.ok) {
+                                const errorData = await response.json().catch(() => ({}));
+                                throw new Error(errorData.detail || 'Failed to save link token');
+                            }
+
+                            console.log('✅ Link token saved successfully');
+                            alert('Success! Bank connected. You can now sync your data.');
+                            
+                            // Call parent success callback
+                            if (onSuccess) {
+                                onSuccess();
+                            }
+                        } catch (error: any) {
+                            console.error('❌ Error saving link token:', error);
+                            setError('Bank connected but failed to save. Please try syncing manually or contact support.');
+                            
+                            if (onError) {
+                                onError(error.message);
+                            }
+                        }
+                    } else {
+                        console.warn('⚠️ No link token received from widget');
+                        alert('Bank connected! You can now sync your data.');
+                        if (onSuccess) {
+                            onSuccess();
+                        }
                     }
-                    
-                    // Show success message
-                    alert('Success! Syncing data...');
                 },
                 onExit: () => {
                     console.log('👋 Widget exited');
@@ -225,13 +270,13 @@ const FintocWidget: React.FC<FintocWidgetProps> = ({
             console.log('🚀 Opening widget...');
             widget.open();
             console.log('✅ Widget opened successfully');
-            
+
         } catch (error: any) {
             console.error('❌ Failed to initialize Fintoc widget:', error);
             setWidgetInstance(null);
             const errorMessage = error?.message || 'Unknown error occurred';
             setError(`Error loading Fintoc widget: ${errorMessage}`);
-            
+
             if (onError) {
                 onError(errorMessage);
             }
@@ -242,23 +287,23 @@ const FintocWidget: React.FC<FintocWidgetProps> = ({
         try {
             setIsLoading(true);
             setError('');
-            
+
             console.log('🚀 Starting bank account connection...');
-            
+
             // Fetch widget configuration
             const response = await fetchWidgetConfig();
-            
+
             if (response.data) {
                 await initializeFintocWidget(response.data);
             } else {
                 throw new Error('Widget configuration not available');
             }
-            
+
         } catch (error: any) {
             console.error('❌ Error connecting bank account:', error);
             const message = error?.message || 'Failed to load widget configuration';
             setError(message);
-            
+
             if (onError) {
                 onError(message);
             }
@@ -268,40 +313,23 @@ const FintocWidget: React.FC<FintocWidgetProps> = ({
     };
 
     return (
-        <div className="fintoc-widget-container">
-            <button
-                onClick={handleConnectBankAccount}
-                disabled={isLoading}
-                className="connect-bank-button"
-                style={{
-                    padding: '12px 24px',
-                    fontSize: '16px',
-                    fontWeight: 'bold',
-                    color: 'white',
-                    backgroundColor: '#4F46E5',
-                    border: 'none',
-                    borderRadius: '8px',
-                    cursor: isLoading ? 'not-allowed' : 'pointer',
-                    opacity: isLoading ? 0.6 : 1,
-                    transition: 'all 0.2s'
-                }}
-            >
-                {isLoading ? '⏳ Loading...' : '🏦 Connect Bank Account'}
-            </button>
-            
-            {error && (
-                <div 
-                    className="error-message"
-                    style={{
-                        marginTop: '12px',
-                        padding: '12px',
-                        backgroundColor: '#FEE2E2',
-                        color: '#DC2626',
-                        borderRadius: '6px',
-                        fontSize: '14px'
-                    }}
+        <div className="fintoc-widget-container space-y-4">
+            <div className="flex flex-wrap items-center gap-2 md:flex-row">
+                <Button
+                    variant="outline"
+                    onClick={handleConnectBankAccount}
+                    disabled={isLoading}
+                    className="gap-2"
                 >
-                    ❌ {error}
+                    <Wallet className="h-4 w-4" />
+                    {isLoading ? 'Loading...' : 'Connect Bank Account'}
+                </Button>
+            </div>
+
+            {error && (
+                <div className="flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800">
+                    <AlertCircle className="h-4 w-4 mt-0.5 flex-shrink-0" />
+                    <p>{error}</p>
                 </div>
             )}
         </div>
