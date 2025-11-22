@@ -188,22 +188,29 @@ async def handle_link_token_webhook(
         
         print(f"✅ Processing webhook for user {user_id}, link_token: {link_token[:20]}...")
         
-        # Exchange the temporary link token for permanent credentials
-        try:
-            link_credentials = exchange_link_token(link_token)
-            link_id = link_credentials.get("link_id")
-            access_token = link_credentials.get("access_token")
-            
-            if not link_id or not access_token:
-                raise Exception("Missing link_id or access_token in exchange response")
-            
-            # Create the full link token in Fintoc API format
-            full_link_token = f"{link_id}_token_{access_token}"
-            print(f"✅ Got link credentials - link_id: {link_id}")
-            
-        except Exception as e:
-            print(f"❌ Error exchanging link token: {e}")
-            raise HTTPException(status_code=500, detail=f"Failed to exchange link token: {str(e)}")
+        # Check if the token is already in full format (link_XXX_token_YYY)
+        if "_token_" in link_token:
+            # Token is already in full format, no need to exchange
+            full_link_token = link_token
+            link_id = link_token.split("_token_")[0]
+            print(f"✅ Token already in full format - link_id: {link_id}")
+        else:
+            # Exchange the temporary link token for permanent credentials
+            try:
+                link_credentials = exchange_link_token(link_token)
+                link_id = link_credentials.get("link_id")
+                access_token = link_credentials.get("access_token")
+                
+                if not link_id or not access_token:
+                    raise Exception("Missing link_id or access_token in exchange response")
+                
+                # Create the full link token in Fintoc API format
+                full_link_token = f"{link_id}_token_{access_token}"
+                print(f"✅ Got link credentials - link_id: {link_id}")
+                
+            except Exception as e:
+                print(f"❌ Error exchanging link token: {e}")
+                raise HTTPException(status_code=500, detail=f"Failed to exchange link token: {str(e)}")
         
         # Extract additional data from webhook
         institution = None
@@ -284,21 +291,28 @@ async def save_link_token(
         
         print(f"📥 Processing link token for user {user_id}")
         
-        # Exchange the link token
-        try:
-            link_credentials = exchange_link_token(link_token)
-            link_id = link_credentials.get("link_id")
-            access_token = link_credentials.get("access_token")
-            
-            if not link_id or not access_token:
-                raise Exception("Missing link_id or access_token")
-            
-            full_link_token = f"{link_id}_token_{access_token}"
-            print(f"✅ Got link credentials - link_id: {link_id}")
-            
-        except Exception as e:
-            print(f"❌ Error exchanging link token: {e}")
-            raise HTTPException(status_code=500, detail=f"Failed to exchange link token: {str(e)}")
+        # Check if the token is already in full format (link_XXX_token_YYY)
+        if "_token_" in link_token:
+            # Token is already in full format, no need to exchange
+            full_link_token = link_token
+            link_id = link_token.split("_token_")[0]
+            print(f"✅ Token already in full format - link_id: {link_id}")
+        else:
+            # Exchange the link token
+            try:
+                link_credentials = exchange_link_token(link_token)
+                link_id = link_credentials.get("link_id")
+                access_token = link_credentials.get("access_token")
+                
+                if not link_id or not access_token:
+                    raise Exception("Missing link_id or access_token")
+                
+                full_link_token = f"{link_id}_token_{access_token}"
+                print(f"✅ Got link credentials - link_id: {link_id}")
+                
+            except Exception as e:
+                print(f"❌ Error exchanging link token: {e}")
+                raise HTTPException(status_code=500, detail=f"Failed to exchange link token: {str(e)}")
         
         # Save to database
         # First, clear any existing token
