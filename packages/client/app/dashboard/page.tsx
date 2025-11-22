@@ -10,7 +10,8 @@ export default async function DashboardPage() {
   const today = new Date()
   const oneYearAgo = format(new Date(today.getFullYear(), today.getMonth() - 6, today.getDate()), "yyyy-MM-dd")
   const todayFormatted = format(new Date(), "yyyy-MM-dd")
-  const movements = await fetch(process.env.NEXT_PUBLIC_API_URL + "/movements?start_date=" + oneYearAgo + "&end_date=" + todayFormatted, {
+  const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://platanus-grupo29-681510028004.us-central1.run.app'
+  const movements = await fetch(API_BASE_URL + "/movements?start_date=" + oneYearAgo + "&end_date=" + todayFormatted, {
     method: "GET",
     headers: {
       "Content-Type": "application/json",
