@@ -43,7 +43,7 @@ interface SyncResponse {
     accounts_synced: number;
     movements_synced: number;
     user_id: string;
-    link_id: string;
+    token: string;
 }
 
 export default function MovementsPage() {

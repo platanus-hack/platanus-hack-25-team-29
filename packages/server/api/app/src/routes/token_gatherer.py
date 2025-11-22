@@ -218,43 +218,16 @@ async def handle_link_token_webhook(
             holder_name = webhook_data.get("holder_name")
             holder_id = webhook_data.get("holder_id")
         
-        # Store the full link token
-        # Check if link already exists
-        check_query = text("""
-            SELECT id FROM fintoc_links 
-            WHERE user_id = :user_id AND id = :link_token
-        """)
-        existing = session.execute(
-            check_query, 
-            {"user_id": user_id, "link_token": full_link_token}
-        ).fetchone()
+        # Store the token in the token table
+        # First, clear any existing token
+        session.execute(text("DELETE FROM token"))
         
-        if not existing:
-            # Insert new link
-            insert_query = text("""
-                INSERT INTO fintoc_links (
-                    id, user_id, holder_id, institution_id, 
-                    active, status, created_at
-                )
-                VALUES (
-                    :id, :user_id, :holder_id, :institution_id,
-                    true, 'active', NOW()
-                )
-            """)
-            
-            session.execute(insert_query, {
-                "id": full_link_token,
-                "user_id": user_id,
-                "holder_id": holder_id or "unknown",
-                "institution_id": institution_id or "unknown"
-            })
-            session.commit()
-            
-            print(f"💾 Full link token saved for user {user_id}")
-            print(f"   Institution: {institution or 'Unknown'}")
-            print(f"   Holder: {holder_name or 'Unknown'}")
-        else:
-            print(f"ℹ️ Link token already exists for user {user_id}")
+        # Insert the new token
+        insert_query = text("INSERT INTO token (token) VALUES (:token)")
+        session.execute(insert_query, {"token": full_link_token})
+        session.commit()
+        
+        print(f"💾 Token saved: {full_link_token[:30]}...")
         
         return JSONResponse(
             content={
@@ -328,38 +301,15 @@ async def save_link_token(
             raise HTTPException(status_code=500, detail=f"Failed to exchange link token: {str(e)}")
         
         # Save to database
-        check_query = text("""
-            SELECT id FROM fintoc_links 
-            WHERE user_id = :user_id AND id = :link_id
-        """)
-        existing = session.execute(
-            check_query, 
-            {"user_id": user_id, "link_id": full_link_token}
-        ).fetchone()
+        # First, clear any existing token
+        session.execute(text("DELETE FROM token"))
         
-        if not existing:
-            insert_query = text("""
-                INSERT INTO fintoc_links (
-                    id, user_id, holder_id, institution_id, 
-                    active, status, created_at
-                )
-                VALUES (
-                    :id, :user_id, :holder_id, :institution_id,
-                    true, 'active', NOW()
-                )
-            """)
-            
-            session.execute(insert_query, {
-                "id": full_link_token,
-                "user_id": user_id,
-                "holder_id": "unknown",
-                "institution_id": "unknown"
-            })
-            session.commit()
-            
-            print(f"💾 Link token saved for user {user_id}")
-        else:
-            print(f"ℹ️ Link already exists for user {user_id}")
+        # Insert the new token
+        insert_query = text("INSERT INTO token (token) VALUES (:token)")
+        session.execute(insert_query, {"token": full_link_token})
+        session.commit()
+        
+        print(f"💾 Token saved: {full_link_token[:30]}...")
         
         return JSONResponse(content={
             "status": "success",
