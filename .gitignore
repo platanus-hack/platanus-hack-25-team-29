@@ -3,3 +3,5 @@ node_modules/
 .yarn/
 .yarnrc.yml
 yarn.lock
+__pycache__
+*.json
