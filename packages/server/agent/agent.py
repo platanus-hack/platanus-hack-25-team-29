@@ -12,6 +12,9 @@ from claude_agent_sdk import (
 )
 from claude_agent_sdk.types import AssistantMessage, TextBlock, ToolUseBlock
 
+# Import Supabase client for database access
+from db_client import get_supabase_client
+
 
 @tool(
     "calculate",
@@ -207,96 +210,31 @@ async def aggregate_by_description(args: dict[str, Any]) -> dict[str, Any]:
         confirmed_only = args.get("confirmed_only", True)
         min_count = args.get("min_count", 1)
 
-        print(f"Aggregating movements by description")
+        print(f"Aggregating movements by description from Supabase")
         print(f"Filters: since={since}, until={until}, confirmed_only={confirmed_only}")
 
-        # Load data from JSON file
-        db_path = Path(__file__).parent.parent / "db" / "example_data.json"
-        try:
-            with open(db_path, "r") as f:
-                data = json.load(f)
-                all_movements = data.get("movements", [])
-        except FileNotFoundError:
-            print(f"Database file not found at {db_path}")
-            return {
-                "content": [{"type": "text", "text": "Error: Database file not found."}]
-            }
-
-        # Apply filters
-        filtered_movements = all_movements
-
-        # Filter by date (since)
-        if since:
-            filtered_movements = [
-                m
-                for m in filtered_movements
-                if m.get("post_date") and m.get("post_date", "") >= since
-            ]
-
-        # Filter by date (until)
-        if until:
-            filtered_movements = [
-                m
-                for m in filtered_movements
-                if m.get("post_date") and m.get("post_date", "") <= until
-            ]
-
-        # Filter by confirmed status
-        if confirmed_only:
-            filtered_movements = [
-                m for m in filtered_movements if not m.get("pending", False)
-            ]
-
-        # Aggregate by description
-        aggregations = {}
-        for movement in filtered_movements:
-            description = movement.get("description", "Unknown")
-            amount = movement.get("amount", 0)
-            currency = movement.get("currency", "CLP")
-
-            if description not in aggregations:
-                aggregations[description] = {
-                    "count": 0,
-                    "total_amount": 0,
-                    "currency": currency,
-                    "amounts": [],
-                }
-
-            aggregations[description]["count"] += 1
-            aggregations[description]["total_amount"] += amount
-            aggregations[description]["amounts"].append(amount)
-
-        # Filter by min_count
-        aggregations = {
-            desc: data
-            for desc, data in aggregations.items()
-            if data["count"] >= min_count
-        }
-
-        # Sort by total amount (absolute value, descending)
-        sorted_aggregations = sorted(
-            aggregations.items(), key=lambda x: abs(x[1]["total_amount"]), reverse=True
+        # Get Supabase client and aggregate movements
+        db_client = get_supabase_client()
+        aggregations = await db_client.aggregate_by_description(
+            since=since,
+            until=until,
+            confirmed_only=confirmed_only,
+            min_count=min_count,
         )
 
-        # Format result
-        result_text = f"Found {len(sorted_aggregations)} unique description(s) with {sum(a['count'] for _, a in sorted_aggregations)} total movements\n\n"
+        # Return compact JSON response (optimized for token usage)
+        total_movements = sum(agg["count"] for agg in aggregations)
+        response_data = {
+            "total_unique_descriptions": len(aggregations),
+            "total_movements": total_movements,
+            "aggregations": aggregations,
+        }
 
-        if sorted_aggregations:
-            for i, (description, data) in enumerate(sorted_aggregations, 1):
-                count = data["count"]
-                total = data["total_amount"]
-                currency = data["currency"]
-                avg = total / count if count > 0 else 0
-
-                result_text += f"{i}. {description}\n"
-                result_text += f"   Count: {count} transaction(s)\n"
-                result_text += f"   Total: {total:,.0f} {currency}\n"
-                result_text += f"   Average: {avg:,.0f} {currency}\n"
-                result_text += "\n"
-        else:
-            result_text += "No movements found for the specified criteria.\n"
-
-        return {"content": [{"type": "text", "text": result_text}]}
+        return {
+            "content": [
+                {"type": "text", "text": json.dumps(response_data, indent=2)}
+            ]
+        }
 
     except Exception as e:
         return {
@@ -335,130 +273,31 @@ async def aggregate_transfers_by_holder(args: dict[str, Any]) -> dict[str, Any]:
         confirmed_only = args.get("confirmed_only", True)
         min_count = args.get("min_count", 1)
 
-        print(f"Aggregating transfers by holder name")
+        print(f"Aggregating transfers by holder name from Supabase")
         print(f"Filters: since={since}, until={until}, confirmed_only={confirmed_only}")
 
-        # Load data from JSON file
-        db_path = Path(__file__).parent.parent / "db" / "example_data.json"
-        try:
-            with open(db_path, "r") as f:
-                data = json.load(f)
-                all_movements = data.get("movements", [])
-        except FileNotFoundError:
-            print(f"Database file not found at {db_path}")
-            return {
-                "content": [{"type": "text", "text": "Error: Database file not found."}]
-            }
-
-        # Filter only transfer type movements
-        filtered_movements = [m for m in all_movements if m.get("type") == "transfer"]
-
-        # Filter by date (since)
-        if since:
-            filtered_movements = [
-                m
-                for m in filtered_movements
-                if m.get("post_date") and m.get("post_date", "") >= since
-            ]
-
-        # Filter by date (until)
-        if until:
-            filtered_movements = [
-                m
-                for m in filtered_movements
-                if m.get("post_date") and m.get("post_date", "") <= until
-            ]
-
-        # Filter by confirmed status
-        if confirmed_only:
-            filtered_movements = [
-                m for m in filtered_movements if not m.get("pending", False)
-            ]
-
-        # Aggregate by holder name
-        aggregations = {}
-        for movement in filtered_movements:
-            amount = movement.get("amount", 0)
-            currency = movement.get("currency", "CLP")
-
-            # Get holder name from recipient or sender
-            holder_name = None
-            holder_type = None
-            institution_name = None
-
-            if movement.get("recipient_account"):
-                holder_name = movement["recipient_account"].get("holder_name")
-                holder_type = "sent to"
-                institution_name = (
-                    movement["recipient_account"]
-                    .get("institution", {})
-                    .get("name", "Unknown")
-                )
-            elif movement.get("sender_account"):
-                holder_name = movement["sender_account"].get("holder_name")
-                holder_type = "received from"
-                institution_name = (
-                    movement["sender_account"]
-                    .get("institution", {})
-                    .get("name", "Unknown")
-                )
-
-            if not holder_name:
-                holder_name = "Unknown"
-                holder_type = "unknown"
-                institution_name = "Unknown"
-
-            key = holder_name
-
-            if key not in aggregations:
-                aggregations[key] = {
-                    "count": 0,
-                    "total_amount": 0,
-                    "currency": currency,
-                    "holder_type": holder_type,
-                    "institution": institution_name,
-                    "amounts": [],
-                }
-
-            aggregations[key]["count"] += 1
-            aggregations[key]["total_amount"] += amount
-            aggregations[key]["amounts"].append(amount)
-
-        # Filter by min_count
-        aggregations = {
-            holder: data
-            for holder, data in aggregations.items()
-            if data["count"] >= min_count
-        }
-
-        # Sort by total amount (absolute value, descending)
-        sorted_aggregations = sorted(
-            aggregations.items(), key=lambda x: abs(x[1]["total_amount"]), reverse=True
+        # Get Supabase client and aggregate transfers
+        db_client = get_supabase_client()
+        aggregations = await db_client.aggregate_transfers_by_holder(
+            since=since,
+            until=until,
+            confirmed_only=confirmed_only,
+            min_count=min_count,
         )
 
-        # Format result
-        result_text = f"Found {len(sorted_aggregations)} unique holder(s) with {sum(a['count'] for _, a in sorted_aggregations)} total transfers\n\n"
+        # Return compact JSON response (optimized for token usage)
+        total_transfers = sum(agg["count"] for agg in aggregations)
+        response_data = {
+            "total_unique_holders": len(aggregations),
+            "total_transfers": total_transfers,
+            "aggregations": aggregations,
+        }
 
-        if sorted_aggregations:
-            for i, (holder_name, data) in enumerate(sorted_aggregations, 1):
-                count = data["count"]
-                total = data["total_amount"]
-                currency = data["currency"]
-                avg = total / count if count > 0 else 0
-                holder_type = data["holder_type"]
-                institution = data["institution"]
-
-                result_text += f"{i}. {holder_name}\n"
-                result_text += f"   Institution: {institution}\n"
-                result_text += f"   Type: {holder_type}\n"
-                result_text += f"   Count: {count} transfer(s)\n"
-                result_text += f"   Total: {total:,.0f} {currency}\n"
-                result_text += f"   Average: {avg:,.0f} {currency}\n"
-                result_text += "\n"
-        else:
-            result_text += "No transfers found for the specified criteria.\n"
-
-        return {"content": [{"type": "text", "text": result_text}]}
+        return {
+            "content": [
+                {"type": "text", "text": json.dumps(response_data, indent=2)}
+            ]
+        }
 
     except Exception as e:
         return {
@@ -499,6 +338,80 @@ async def get_date(args: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+@tool(
+    "fetch_movements",
+    "Retrieve movements from the Supabase database with filtering and pagination",
+    {
+        "since": str,  # ISO 8601 date format
+        "until": str,  # ISO 8601 date format
+        "per_page": int,
+        "page": int,
+        "confirmed_only": bool,
+    },
+)
+async def fetch_movements(args: dict[str, Any]) -> dict[str, Any]:
+    """
+    Fetch movements from Supabase database for all bank accounts.
+
+    Args:
+        since: Date using ISO 8601. Return only movements with post_date >= since (optional)
+        until: Date using ISO 8601. Return only movements with post_date <= until (optional)
+        per_page: Amount of movements per page. Defaults to 30. Maximum is 300 (optional)
+        page: The page being retrieved. Starts from 1 (optional)
+        confirmed_only: Show only confirmed movements. Defaults to true (optional)
+    """
+    try:
+        since = args.get("since")
+        until = args.get("until")
+        per_page = args.get("per_page", 30)
+        page = args.get("page", 1)
+        confirmed_only = args.get("confirmed_only", True)
+
+        print(f"Fetching movements from Supabase")
+        print(
+            f"Filters: since={since}, until={until}, confirmed_only={confirmed_only}"
+        )
+        print(f"Pagination: page={page}, per_page={per_page}")
+
+        # Get Supabase client and fetch movements
+        db_client = get_supabase_client()
+        result = await db_client.fetch_movements(
+            since=since,
+            until=until,
+            per_page=per_page,
+            page=page,
+            confirmed_only=confirmed_only,
+        )
+
+        # Return compact JSON response (optimized for token usage)
+        movements = result["movements"]
+        count = result["count"]
+
+        # Format as compact JSON instead of verbose text
+        response_data = {
+            "total": count,
+            "page": page,
+            "per_page": per_page,
+            "movements": movements,
+        }
+
+        return {
+            "content": [
+                {"type": "text", "text": json.dumps(response_data, indent=2)}
+            ]
+        }
+
+    except Exception as e:
+        return {
+            "content": [
+                {
+                    "type": "text",
+                    "text": f"Error retrieving movements from Supabase: {str(e)}",
+                }
+            ]
+        }
+
+
 # Create SDK MCP server config for tools (in-process, not a separate MCP server)
 calculator_tools = create_sdk_mcp_server(
     name="calculator",
@@ -506,7 +419,8 @@ calculator_tools = create_sdk_mcp_server(
     tools=[
         calculate,
         compound_interest,
-        list_movements,
+        list_movements,  # Deprecated - kept for backwards compatibility
+        fetch_movements,  # New: Fetches from Supabase database
         aggregate_by_description,
         aggregate_transfers_by_holder,
         get_date,
@@ -525,7 +439,7 @@ if __name__ == "__main__":
             continue_conversation=True,
             allowed_tools=[
                 "mcp__Tools__get_date",
-                "mcp__Tools__list_movements",
+                "mcp__Tools__fetch_movements",  # New: Fetches from Supabase
                 "mcp__Tools__aggregate_by_description",
                 "mcp__Tools__aggregate_transfers_by_holder",
                 "mcp__Tools__calculate",
@@ -536,22 +450,24 @@ if __name__ == "__main__":
 IMPORTANTE - FLUJO OBLIGATORIO:
 1. SIEMPRE debes usar la herramienta get_date PRIMERO antes de cualquier consulta sobre fechas o movimientos
 2. Usa la fecha actual obtenida para calcular rangos de fechas correctamente
-3. Luego usa list_movements con las fechas en formato ISO 8601 (YYYY-MM-DD)
+3. Luego usa fetch_movements con las fechas en formato ISO 8601 (YYYY-MM-DD) para obtener movimientos desde la base de datos
 4. Para análisis de patrones de gasto, usa aggregate_by_description para agrupar gastos por descripción
 5. Para análisis de transferencias, usa aggregate_transfers_by_holder para ver a quién transfieres
 
 Cuando el usuario pregunte sobre períodos relativos como "la semana pasada", "este mes", etc:
 - PRIMERO llama a get_date para obtener la fecha actual
 - DESPUÉS calcula las fechas de inicio y fin basándote en la fecha actual obtenida
-- Finalmente consulta los movimientos con list_movements o las herramientas de agregación
+- Finalmente consulta los movimientos con fetch_movements o las herramientas de agregación
 
 Herramientas disponibles:
-- list_movements: Lista movimientos individuales de todas las cuentas
+- fetch_movements: Lista movimientos individuales de todas las cuentas desde la base de datos Supabase
 - aggregate_by_description: Agrupa y suma movimientos por descripción para ver patrones de gasto
 - aggregate_transfers_by_holder: Agrupa transferencias por el nombre del beneficiario/remitente
 - get_date: Obtiene la fecha actual
 - calculate: Realiza cálculos matemáticos
 - compound_interest: Calcula interés compuesto
+
+IMPORTANTE: fetch_movements devuelve datos en formato JSON compacto. Analiza el JSON y presenta los resultados de forma clara al usuario.
 
 Tu objetivo es ayudar a los usuarios a entender su estado financiero y a tomar decisiones informadas sobre su dinero.
 """,
