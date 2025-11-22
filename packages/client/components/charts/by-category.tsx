@@ -1,50 +1,39 @@
 "use client"
 
 import { Bar, BarChart, XAxis, YAxis } from "recharts"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
 import { Movement } from "@/lib/types"
+import { groupTransfersByDescription } from "@/lib/groupByDescription"
 
-const chartData = [
-  { category: "Alimentacion", amount: 275000, fill: "var(--color-Alimentacion)" },
-  { category: "Transporte", amount: 200000, fill: "var(--color-Transporte)" },
-  { category: "Salud", amount: 187000, fill: "var(--color-Salud)" },
-  { category: "Carrete", amount: 173000, fill: "var(--color-Carrete)" },
-  { category: "Otros", amount: 90000, fill: "var(--color-Otros)" },
-]
-
-const chartConfig = {
-  amount: {
-    label: "Gasto",
-  },
-  Alimentacion: {
-    label: "Alimentación",
-    color: "var(--chart-1)",
-  },
-  Transporte: {
-    label: "Transporte",
-    color: "var(--chart-2)",
-  },
-  Salud: {
-    label: "Salud",
-    color: "var(--chart-3)",
-  },
-  Carrete: {
-    label: "Carrete",
-    color: "var(--chart-4)",
-  },
-  Otros: {
-    label: "Otros",
-    color: "var(--chart-5)",
-  },
-} satisfies ChartConfig
 
 export function ByCategory({ movements }: { movements: Movement[] }) {
+  let groupedTransfers = groupTransfersByDescription(movements)
+  groupedTransfers = groupedTransfers
+    .filter(group => group.totalAmount > 0)
+    .sort((a, b) => b.totalAmount - a.totalAmount)
+    .slice(0, 7)
+  const chartData = groupedTransfers.map(group => ({
+    category: group.description,
+    amount: group.totalAmount,
+    fill: "var(--chart-1)",
+  }))
+  const chartConfig = {
+    amount: {
+      label: "Gasto",
+    },
+    ...groupedTransfers.reduce((acc, group) => {
+      acc[group.description] = {
+        label: group.description,
+        color: "var(--chart-1)",
+      }
+      return acc
+    }, {} as Record<string, { label: string; color: string }>),
+  } satisfies ChartConfig
   return (
     <Card>
       <CardHeader>
-        <CardTitle>By Category</CardTitle>
-        <CardDescription>January - June 2024</CardDescription>
+        <CardTitle>Gastos por Categoría</CardTitle>
       </CardHeader>
       <CardContent>
         <ChartContainer config={chartConfig}>
@@ -62,7 +51,28 @@ export function ByCategory({ movements }: { movements: Movement[] }) {
               tickLine={false}
               tickMargin={10}
               axisLine={false}
-              width={90}
+              width={120}
+              tick={({ x, y, payload }) => {
+                const category = payload.value as string
+                const maxLen = 14
+                const displayText =
+                  category.length > maxLen
+                    ? category.slice(0, maxLen - 1) + "…"
+                    : category
+                return (
+                  <text
+                    x={x}
+                    y={y}
+                    width={100}
+                    fontSize={12}
+                    fill="var(--gray-900, #18181b)"
+                    textAnchor="end"
+                    alignmentBaseline="middle"
+                  >
+                    {displayText}
+                  </text>
+                )
+              }}
             />
             <XAxis dataKey="amount" type="number" hide />
             <ChartTooltip

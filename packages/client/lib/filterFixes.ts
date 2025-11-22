@@ -6,8 +6,7 @@ import { Movement } from "@/lib/types"
  * Identifica gastos fijos mensuales a partir de una lista de movimientos.
  * Retorna el último Movement (por fecha) de cada grupo de gastos que ocurren una vez al mes.
  */
-export function getMonthlyFixedExpenses(movements: Movement[]): Movement[] {
-  if (!Array.isArray(movements)) return []
+export function getMonthlyFixedExpenses({movements, getFixes=true}: {movements: Movement[], getFixes?: boolean}): Movement[] {
 
   // Filtrar solo gastos (amount negativo) y que tengan campos necesarios
   const gastos = movements.filter(
@@ -54,7 +53,7 @@ export function getMonthlyFixedExpenses(movements: Movement[]): Movement[] {
 
     const mesesUnicos = Object.keys(meses)
     // Al menos 3 meses y SOLO un gasto por mes en cada mes
-    const esMensual = mesesUnicos.length >= 3 && mesesUnicos.every(m => meses[m].length === 1)
+    const esMensual = mesesUnicos.length >= 5 && mesesUnicos.every(m => meses[m].length === 1)
     if (esMensual) {
       // Tomar el gasto más reciente
       const ultimo = group[group.length - 1]
@@ -62,5 +61,14 @@ export function getMonthlyFixedExpenses(movements: Movement[]): Movement[] {
     }
   }
 
-  return result
+  if (getFixes) {
+    return result
+  } else {
+    return movements.filter(
+      mov =>
+        !result.some(fijo => fijo.id === mov.id && fijo.description) &&
+        !(mov.description || "").toLowerCase().includes("transferencia") &&
+        !(mov.description || "").toLowerCase().includes("depósito")
+    )
+  }
 }
