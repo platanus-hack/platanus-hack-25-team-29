@@ -18,17 +18,20 @@ import type { Message, ToolUse } from "@/store/types"
 
 // UI Libraries
 import { AnimatePresence, motion } from "framer-motion"
-import { 
-  Send, 
-  Trash2, 
-  Bot, 
-  User, 
-  StopCircle, 
-  Cpu,
+import {
+  Send,
+  Trash2,
+  Bot,
+  User,
+  StopCircle,
   Sparkles
 } from "lucide-react"
 import ReactMarkdown from "react-markdown"
 import remarkGfm from "remark-gfm"
+
+// Enhanced tool components
+import { EnhancedToolCard } from "./enhanced-tool-card"
+import { InlineToolStatus } from "./inline-tool-status"
 
 // --- 1. Smooth Cursor ---
 const SmoothCursor = () => (
@@ -77,127 +80,121 @@ const ThinkingBubble = () => (
   </motion.div>
 )
 
-// --- 3. Tool Card (Visible & Responsive) ---
-const ToolCard = ({ tool }: { tool: ToolUse }) => (
-  <div className="mb-3 w-full bg-slate-50 border border-slate-200 rounded-lg overflow-hidden">
-    <div className="bg-slate-100/50 px-3 py-2 flex items-center gap-2 border-b border-slate-200">
-      <div className="p-1 bg-blue-100 text-blue-600 rounded">
-        <Cpu size={12} />
-      </div>
-      <span className="text-xs font-semibold text-slate-700 font-mono truncate">
-        {tool.name}
-      </span>
-    </div>
-    <div className="p-2 md:p-3 bg-slate-50 overflow-x-auto">
-      <div className="text-[10px] text-slate-400 uppercase font-bold mb-1 tracking-wider">Input</div>
-      <code className="text-xs font-mono text-slate-600 block whitespace-pre-wrap break-all">
-        {JSON.stringify(tool.input, null, 2)}
-      </code>
-    </div>
-  </div>
-)
-
-// --- 4. Message Component (Responsive Layout Logic) ---
-const MessageBubble = ({ 
-  msg, 
-  isLast, 
-  isStreaming 
-}: { 
-  msg: Message; 
-  isLast: boolean; 
-  isStreaming: boolean 
+// --- 3. Message Component (Responsive Layout Logic) ---
+const MessageBubble = ({
+  msg,
+  isLast,
+  isStreaming
+}: {
+  msg: Message;
+  isLast: boolean;
+  isStreaming: boolean
 }) => {
   const isUser = msg.role === 'user'
 
+  // Find currently executing tool for inline status
+  const executingTool = isLast && isStreaming && msg.toolUses
+    ? msg.toolUses.find(t => t.status === "executing")
+    : null
+
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      className={`flex w-full mb-6 ${isUser ? 'justify-end' : 'justify-start'}`}
-    >
-      {/* 
-         RESPONSIVE WIDTH LOGIC:
-         - max-w-[88%]: On mobile, bubble takes up most of the screen (avoiding thin columns).
-         - md:max-w-[80%]: On desktop, slightly restricted to keep distinct 'chat' feel.
-      */}
-      <div className={`flex max-w-[88%] md:max-w-[80%] gap-2 md:gap-3 ${isUser ? 'flex-row-reverse' : 'flex-row'}`}>
-        
-        {/* Avatar - Hidden on very small screens for User to save space, optional */}
-        <div className={`flex-shrink-0 w-7 h-7 md:w-9 md:h-9 mt-0.5 rounded-full flex items-center justify-center shadow-sm transition-all
-          ${isUser 
-            ? 'bg-blue-600 text-white' 
-            : 'bg-white border border-gray-200 text-purple-600'
-          }`}>
-          {isUser ? <User size={15} className="md:w-5 md:h-5" /> : <Bot size={16} className="md:w-5 md:h-5" />}
-        </div>
+    <>
+      {/* Inline tool status (ChatGPT/Claude style) for executing tools */}
+      {!isUser && executingTool && (
+        <AnimatePresence>
+          <InlineToolStatus tool={executingTool} />
+        </AnimatePresence>
+      )}
 
-        <div className={`flex flex-col ${isUser ? 'items-end' : 'items-start'} w-full min-w-0`}>
-          {/* Name Label */}
-          <div className="flex items-baseline gap-2 mb-1 px-1">
-            <span className="text-xs font-medium text-gray-500 opacity-0 md:opacity-100 transition-opacity">
-              {isUser ? 'You' : 'Agent'}
-            </span>
-            {msg.interrupted && (
-              <span className="text-[10px] bg-orange-100 text-orange-700 px-1.5 py-0.5 rounded-md uppercase tracking-wider font-bold">
-                Interrupted
-              </span>
-            )}
-          </div>
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        className={`flex w-full mb-6 ${isUser ? 'justify-end' : 'justify-start'}`}
+      >
+        {/*
+           RESPONSIVE WIDTH LOGIC:
+           - max-w-[88%]: On mobile, bubble takes up most of the screen (avoiding thin columns).
+           - md:max-w-[80%]: On desktop, slightly restricted to keep distinct 'chat' feel.
+        */}
+        <div className={`flex max-w-[88%] md:max-w-[80%] gap-2 md:gap-3 ${isUser ? 'flex-row-reverse' : 'flex-row'}`}>
 
-          {/* 
-             BUBBLE BODY STYLING 
-             - Using break-words to ensure long URLs or strings don't break layout on mobile.
-          */}
-          <div className={`relative px-4 py-3 md:px-6 md:py-4 shadow-sm text-sm md:text-base leading-relaxed w-full break-words
-            ${isUser 
-              ? 'bg-blue-600 text-white rounded-2xl rounded-tr-sm' 
-              : 'bg-white border border-gray-200 text-gray-800 rounded-2xl rounded-tl-sm'
+          {/* Avatar - Hidden on very small screens for User to save space, optional */}
+          <div className={`flex-shrink-0 w-7 h-7 md:w-9 md:h-9 mt-0.5 rounded-full flex items-center justify-center shadow-sm transition-all
+            ${isUser
+              ? 'bg-blue-600 text-white'
+              : 'bg-white border border-gray-200 text-purple-600'
             }`}>
-            
-            {/* Render Tools (Cards) */}
-            {msg.toolUses && msg.toolUses.length > 0 && (
-               <div className="mb-4 flex flex-col gap-2 w-full">
-                 {msg.toolUses.map((tool, i) => (
-                   <ToolCard key={tool.id || i} tool={tool} />
-                 ))}
-               </div>
-            )}
+            {isUser ? <User size={15} className="md:w-5 md:h-5" /> : <Bot size={16} className="md:w-5 md:h-5" />}
+          </div>
 
-            {/* Render Content */}
-            {isUser ? (
-              <div className="whitespace-pre-wrap">{msg.content}</div>
-            ) : (
-              <div className={`markdown-body w-full ${msg.content ? '' : 'min-h-[20px]'}`}>
-                <ReactMarkdown 
-                  remarkPlugins={[remarkGfm]} 
-                  components={{
-                    p: ({children}) => <p className="mb-3 last:mb-0">{children}</p>,
-                    a: ({href, children}) => <a href={href} className="text-blue-500 hover:underline break-all" target="_blank">{children}</a>,
-                    // Code block styling
-                    code: ({className, children}) => {
-                      const isInline = !className;
-                      return isInline 
-                        ? <code className="bg-gray-100 text-red-500 px-1 py-0.5 rounded font-mono text-xs md:text-sm border border-gray-200">{children}</code>
-                        : <code className="block bg-gray-900 text-gray-100 p-3 md:p-4 rounded-lg my-3 overflow-x-auto font-mono text-xs md:text-sm shadow-inner">{children}</code>
-                    },
-                    // Lists
-                    ul: ({children}) => <ul className="list-disc pl-4 md:pl-6 mb-2 space-y-1">{children}</ul>,
-                    ol: ({children}) => <ol className="list-decimal pl-4 md:pl-6 mb-2 space-y-1">{children}</ol>,
-                    // Tables (crucial for responsiveness)
-                    table: ({children}) => <div className="overflow-x-auto my-3 rounded-lg border border-gray-200"><table className="min-w-full divide-y divide-gray-200">{children}</table></div>,
-                    th: ({children}) => <th className="px-3 py-2 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{children}</th>,
-                    td: ({children}) => <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500 border-t border-gray-100">{children}</td>
-                  }}
-                >
-                  {msg.content}
-                </ReactMarkdown>
-                {isLast && isStreaming && <SmoothCursor />}
-              </div>
-            )}
+          <div className={`flex flex-col ${isUser ? 'items-end' : 'items-start'} w-full min-w-0`}>
+            {/* Name Label */}
+            <div className="flex items-baseline gap-2 mb-1 px-1">
+              <span className="text-xs font-medium text-gray-500 opacity-0 md:opacity-100 transition-opacity">
+                {isUser ? 'You' : 'Agent'}
+              </span>
+              {msg.interrupted && (
+                <span className="text-[10px] bg-orange-100 text-orange-700 px-1.5 py-0.5 rounded-md uppercase tracking-wider font-bold">
+                  Interrupted
+                </span>
+              )}
+            </div>
+
+            {/*
+               BUBBLE BODY STYLING
+               - Using break-words to ensure long URLs or strings don't break layout on mobile.
+            */}
+            <div className={`relative px-4 py-3 md:px-6 md:py-4 shadow-sm text-sm md:text-base leading-relaxed w-full break-words
+              ${isUser
+                ? 'bg-blue-600 text-white rounded-2xl rounded-tr-sm'
+                : 'bg-white border border-gray-200 text-gray-800 rounded-2xl rounded-tl-sm'
+              }`}>
+
+              {/* Render Tools (Enhanced Cards) */}
+              {msg.toolUses && msg.toolUses.length > 0 && (
+                 <div className="mb-4 flex flex-col gap-2 w-full">
+                   {msg.toolUses.map((tool, i) => (
+                     <EnhancedToolCard key={tool.id || i} tool={tool} autoCollapse={true} />
+                   ))}
+                 </div>
+              )}
+
+              {/* Render Content */}
+              {isUser ? (
+                <div className="whitespace-pre-wrap">{msg.content}</div>
+              ) : (
+                <div className={`markdown-body w-full ${msg.content ? '' : 'min-h-[20px]'}`}>
+                  <ReactMarkdown
+                    remarkPlugins={[remarkGfm]}
+                    components={{
+                      p: ({children}) => <p className="mb-3 last:mb-0">{children}</p>,
+                      a: ({href, children}) => <a href={href} className="text-blue-500 hover:underline break-all" target="_blank">{children}</a>,
+                      // Code block styling
+                      code: ({className, children}) => {
+                        const isInline = !className;
+                        return isInline
+                          ? <code className="bg-gray-100 text-red-500 px-1 py-0.5 rounded font-mono text-xs md:text-sm border border-gray-200">{children}</code>
+                          : <code className="block bg-gray-900 text-gray-100 p-3 md:p-4 rounded-lg my-3 overflow-x-auto font-mono text-xs md:text-sm shadow-inner">{children}</code>
+                      },
+                      // Lists
+                      ul: ({children}) => <ul className="list-disc pl-4 md:pl-6 mb-2 space-y-1">{children}</ul>,
+                      ol: ({children}) => <ol className="list-decimal pl-4 md:pl-6 mb-2 space-y-1">{children}</ol>,
+                      // Tables (crucial for responsiveness)
+                      table: ({children}) => <div className="overflow-x-auto my-3 rounded-lg border border-gray-200"><table className="min-w-full divide-y divide-gray-200">{children}</table></div>,
+                      th: ({children}) => <th className="px-3 py-2 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{children}</th>,
+                      td: ({children}) => <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500 border-t border-gray-100">{children}</td>
+                    }}
+                  >
+                    {msg.content}
+                  </ReactMarkdown>
+                  {isLast && isStreaming && <SmoothCursor />}
+                </div>
+              )}
+            </div>
           </div>
         </div>
-      </div>
-    </motion.div>
+      </motion.div>
+    </>
   )
 }
 
@@ -301,6 +298,15 @@ export function ChatView() {
               setHasReceivedFirstToken(true); 
 
               if (parsed.type === "text") {
+                // Mark any executing tools as completed when text arrives (heuristic)
+                currentToolUses = currentToolUses.map(tool => {
+                  if (tool.status === "executing") {
+                    const duration = tool.timestamp ? Date.now() - tool.timestamp : undefined
+                    return { ...tool, status: "completed" as const, duration }
+                  }
+                  return tool
+                })
+
                 currentAssistantMessage += parsed.content
                 if (assistantMessageCreated) {
                   dispatch(updateLastMessage({ content: currentAssistantMessage, toolUses: [...currentToolUses] }))
@@ -313,6 +319,8 @@ export function ChatView() {
                   name: parsed.name,
                   input: parsed.input,
                   id: parsed.id || `tool-${Date.now()}`,
+                  status: "executing", // Set status to executing when tool is first used
+                  timestamp: Date.now()
                 };
                 currentToolUses.push(toolUse);
                 if (!assistantMessageCreated) {
@@ -321,8 +329,34 @@ export function ChatView() {
                 } else {
                     dispatch(updateLastMessage({ content: currentAssistantMessage, toolUses: [...currentToolUses] }))
                 }
+              } else if (parsed.type === "tool_complete") {
+                // Handle tool completion (when backend sends this event)
+                const toolIndex = currentToolUses.findIndex(t => t.id === parsed.id)
+                if (toolIndex !== -1) {
+                  const completedTool = currentToolUses[toolIndex]
+                  const duration = completedTool.timestamp ? Date.now() - completedTool.timestamp : undefined
+                  currentToolUses[toolIndex] = {
+                    ...completedTool,
+                    status: "completed",
+                    duration
+                  }
+                  dispatch(updateLastMessage({ content: currentAssistantMessage, toolUses: [...currentToolUses] }))
+                }
               } else if (parsed.type === "error") {
-                dispatch(setToolActivity(`Error: ${parsed.error}`))
+                // Handle tool errors
+                if (parsed.tool_id) {
+                  const toolIndex = currentToolUses.findIndex(t => t.id === parsed.tool_id)
+                  if (toolIndex !== -1) {
+                    currentToolUses[toolIndex] = {
+                      ...currentToolUses[toolIndex],
+                      status: "error",
+                      error: parsed.error
+                    }
+                    dispatch(updateLastMessage({ content: currentAssistantMessage, toolUses: [...currentToolUses] }))
+                  }
+                } else {
+                  dispatch(setToolActivity(`Error: ${parsed.error}`))
+                }
               }
             } catch (e) { console.error(e) }
           }
