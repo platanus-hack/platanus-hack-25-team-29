@@ -8,7 +8,8 @@ export async function POST(req: NextRequest) {
   const { prompt, systemPrompt, maxTurns } = await req.json();
 
   // Forward request to Python backend
-  const response = await fetch(`https://platanus-grupo29-681510028004.us-central1.run.app/api/agent`, {
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+  const response = await fetch(`${apiUrl}/api/agent`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
