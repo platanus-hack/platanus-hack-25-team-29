@@ -1,21 +1,25 @@
-"""
-Shared tools configuration for Claude Agent SDK.
-Contains all tool definitions and MCP server setup for financial assistant.
-"""
-
 import math
 import json
+import sys
 from datetime import datetime
+from pathlib import Path
 from typing import Any
 
 from sqlalchemy import text
 
-from app.db import SessionLocal
+# Add parent directory to path to allow importing from api.app
+# This assumes the script is run from its location or packages/server/agent/
+# We need to add packages/server to path
+sys.path.append(str(Path(__file__).parent.parent))
+from api.app.db import SessionLocal
 
 from claude_agent_sdk import (
     tool,
     create_sdk_mcp_server,
+    ClaudeSDKClient,
+    ClaudeAgentOptions,
 )
+from claude_agent_sdk.types import AssistantMessage, TextBlock, ToolUseBlock
 
 
 @tool(
@@ -74,69 +78,11 @@ Return: {(interest / principal) * 100:.2f}%""",
 
 
 @tool(
-    "get_accounts",
-    "Get current balances for all connected bank accounts",
-    {},
-)
-async def get_accounts(args: dict[str, Any]) -> dict[str, Any]:
-    """
-    Retrieve the latest balance information for all accounts.
-    """
-    session = SessionLocal()
-    try:
-        query = """
-        SELECT 
-            name, 
-            official_name, 
-            account_type, 
-            currency, 
-            balance_available, 
-            balance_current,
-            updated_at
-        FROM fintoc_accounts
-        ORDER BY balance_current DESC
-        """
-        result = session.execute(text(query))
-        accounts = [dict(row._mapping) for row in result]
-
-        if not accounts:
-            return {"content": [{"type": "text", "text": "No accounts found."}]}
-
-        text_output = "Current Account Balances:\n\n"
-        total_balance = 0
-
-        for acc in accounts:
-            name = acc.get("name") or acc.get("official_name") or "Unknown Account"
-            currency = acc.get("currency", "CLP")
-            balance = acc.get("balance_current") or 0
-            total_balance += float(balance)
-
-            text_output += f"🏦 {name} ({acc.get('account_type', 'N/A')})\n"
-            text_output += f"   Balance: ${balance:,.0f} {currency}\n"
-            if acc.get("balance_available"):
-                text_output += (
-                    f"   Available: ${acc['balance_available']:,.0f} {currency}\n"
-                )
-            text_output += "\n"
-
-        text_output += f"Total Net Worth: ${total_balance:,.0f}"
-
-        return {"content": [{"type": "text", "text": text_output}]}
-    except Exception as e:
-        return {
-            "content": [{"type": "text", "text": f"Error fetching accounts: {str(e)}"}]
-        }
-    finally:
-        session.close()
-
-
-@tool(
     "list_movements",
     "Retrieve movements of a bank account from the database",
     {
         "since": str,  # ISO 8601 date format
         "until": str,  # ISO 8601 date format
-        "search_term": str,  # Filter by description
         "per_page": int,
         "page": int,
         "confirmed_only": bool,
@@ -149,7 +95,6 @@ async def list_movements(args: dict[str, Any]) -> dict[str, Any]:
     Args:
         since: Date using ISO 8601. Return only movements with transaction_date equal or after since (optional)
         until: Date using ISO 8601. Return only movements with transaction_date equal or before until (optional)
-        search_term: Filter by description (e.g. "Uber", "Amazon") (optional)
         per_page: Amount of movements per page. Defaults to 30. Maximum is 300 (optional)
         page: The page being retrieved. Starts from 1 (optional)
         confirmed_only: Show only confirmed movements. Defaults to true (optional)
@@ -158,24 +103,17 @@ async def list_movements(args: dict[str, Any]) -> dict[str, Any]:
     try:
         since = args.get("since")
         until = args.get("until")
-        search_term = args.get("search_term")
         per_page = args.get("per_page", 30)
         page = args.get("page", 1)
         confirmed_only = args.get("confirmed_only", True)
 
         print(f"Fetching movements from DB for all accounts")
-        print(
-            f"Filters: since={since}, until={until}, confirmed_only={confirmed_only}, search_term={search_term}"
-        )
+        print(f"Filters: since={since}, until={until}, confirmed_only={confirmed_only}")
         print(f"Pagination: page={page}, per_page={per_page}")
 
         # Build Query
         query_parts = ["SELECT * FROM movements WHERE 1=1"]
         params = {}
-
-        if search_term:
-            query_parts.append("AND description ILIKE :search_term")
-            params["search_term"] = f"%{search_term}%"
 
         if since:
             query_parts.append("AND transaction_date >= :since")
@@ -442,6 +380,11 @@ async def aggregate_transfers_by_holder(args: dict[str, Any]) -> dict[str, Any]:
                 currency = data["currency"]
                 avg = total / count if count > 0 else 0
 
+                # Note: Institution and Holder Type (sent/received) logic is harder to replicate purely in SQL
+                # without more complex joins or schema knowledge about 'recipient_account' vs 'sender_account'
+                # which seems to be part of the JSON structure but flattened in SQL.
+                # We will omit detailed institution info for now as it's not in the simple join.
+
                 result_text += f"{i}. {holder_name}\n"
                 result_text += f"   Count: {count} transfer(s)\n"
                 result_text += f"   Total: {total:,.0f} {currency}\n"
@@ -466,177 +409,35 @@ async def aggregate_transfers_by_holder(args: dict[str, Any]) -> dict[str, Any]:
 
 
 @tool(
-    "summary_cashflow",
-    "Get total income, expenses and net cashflow in a given period",
-    {
-        "since": str,
-        "until": str,
-        "confirmed_only": bool,
-    },
-)
-async def summary_cashflow(args: dict[str, Any]) -> dict[str, Any]:
-    session = SessionLocal()
-    try:
-        since = args.get("since")
-        until = args.get("until")
-        confirmed_only = args.get("confirmed_only", True)
-
-        query_parts = [
-            """
-            SELECT 
-                COALESCE(SUM(CASE WHEN amount > 0 THEN amount ELSE 0 END), 0) AS total_income,
-                COALESCE(SUM(CASE WHEN amount < 0 THEN amount ELSE 0 END), 0) AS total_expenses,
-                COALESCE(MAX(currency), 'CLP') as currency,
-                COUNT(*) as count
-            FROM movements
-            WHERE 1=1
-            """
-        ]
-        params = {}
-
-        if since:
-            query_parts.append("AND transaction_date >= :since")
-            params["since"] = since
-        if until:
-            query_parts.append("AND transaction_date <= :until")
-            params["until"] = until
-        if confirmed_only:
-            query_parts.append("AND pending = false")
-
-        # Removed GROUP BY since we assume a single currency environment (CLP)
-        # This avoids potential issues with fetchone() dropping data if multiple currencies existed
-
-        final_query = " ".join(query_parts)
-        row = session.execute(text(final_query), params).fetchone()
-
-        data = dict(row._mapping)
-
-        if data["count"] == 0:
-            return {
-                "content": [
-                    {
-                        "type": "text",
-                        "text": "No se encontraron movimientos para ese período.",
-                    }
-                ]
-            }
-
-        income = data["total_income"]
-        expenses = data["total_expenses"]  # negative
-        net = income + expenses
-
-        text_summary = (
-            f"Resumen de flujo de caja ({data['currency']}):\n"
-            f"- Ingresos: {income:,.0f}\n"
-            f"- Gastos: {abs(expenses):,.0f}\n"
-            f"- Neto: {net:,.0f}\n"
-        )
-
-        return {
-            "content": [
-                {"type": "text", "text": text_summary},
-                {
-                    "type": "json",
-                    "json": {
-                        "income": income,
-                        "expenses": expenses,
-                        "net": net,
-                        "currency": data["currency"],
-                    },
-                },
-            ]
-        }
-    finally:
-        session.close()
-
-
-@tool(
     "execute_query",
-    "Execute a read-only SQL SELECT query against the database",
+    "Execute a raw SQL query against the database",
     {"query": str},
 )
 async def execute_query(args: dict[str, Any]) -> dict[str, Any]:
     """
-    Execute a read-only SQL SELECT query against the database.
-    Only SELECT queries are allowed. Data modification queries (INSERT, UPDATE, DELETE, etc.) are not permitted.
+    Execute a raw SQL query against the database.
+    WARNING: This tool allows executing any SQL query. Use with caution.
     """
     session = SessionLocal()
     try:
         query = args["query"]
-        print(f"\n{'='*60}")
-        print(f"[{datetime.now().isoformat()}] Starting query execution")
-        print(f"Query preview: {query[:200]}...")
-        print(f"{'='*60}\n")
+        print(f"Executing query: {query}")
 
-        # Strip whitespace and check if query starts with SELECT (case-insensitive)
-        query_stripped = query.strip()
-        if not query_stripped.upper().startswith("SELECT"):
+        result = session.execute(text(query))
+
+        if result.returns_rows:
+            rows = [dict(row._mapping) for row in result]
             return {
                 "content": [
-                    {
-                        "type": "text",
-                        "text": "Error: Only SELECT queries are allowed. This tool is read-only and does not permit data modification (INSERT, UPDATE, DELETE, DROP, etc.).",
-                    }
+                    {"type": "text", "text": json.dumps(rows, default=str, indent=2)}
                 ]
             }
-
-        # Time the database execution
-        db_start = datetime.now()
-        print(f"[{db_start.isoformat()}] 🔄 Executing DB query...")
-        result = session.execute(text(query))
-        db_end = datetime.now()
-        db_elapsed = (db_end - db_start).total_seconds()
-        print(f"[{db_end.isoformat()}] ✅ DB query completed in {db_elapsed:.2f}s")
-
-        # Since we only allow SELECT queries, result should always return rows
-        if result.returns_rows:
-            # Time the row fetching
-            fetch_start = datetime.now()
-            print(f"[{fetch_start.isoformat()}] 📦 Fetching rows...")
-            rows = [dict(row._mapping) for row in result]
-            fetch_end = datetime.now()
-            fetch_elapsed = (fetch_end - fetch_start).total_seconds()
-            print(
-                f"[{fetch_end.isoformat()}] ✅ Fetched {len(rows)} rows in {fetch_elapsed:.2f}s"
-            )
-
-            # Time the JSON serialization
-            json_start = datetime.now()
-            print(f"[{json_start.isoformat()}] 🔄 Serializing to JSON...")
-            json_result = json.dumps(rows, default=str, indent=2)
-            json_end = datetime.now()
-            json_elapsed = (json_end - json_start).total_seconds()
-            print(
-                f"[{json_end.isoformat()}] ✅ Serialized {len(json_result)} chars in {json_elapsed:.2f}s"
-            )
-
-            total_elapsed = (json_end - db_start).total_seconds()
-            print(f"\n{'='*60}")
-            print(f"⏱️  TOTAL TIME: {total_elapsed:.2f}s")
-            print(
-                f"   - DB execution: {db_elapsed:.2f}s ({db_elapsed/total_elapsed*100:.1f}%)"
-            )
-            print(
-                f"   - Row fetching: {fetch_elapsed:.2f}s ({fetch_elapsed/total_elapsed*100:.1f}%)"
-            )
-            print(
-                f"   - JSON serialization: {json_elapsed:.2f}s ({json_elapsed/total_elapsed*100:.1f}%)"
-            )
-            print(f"{'='*60}\n")
-
-            return {"content": [{"type": "text", "text": json_result}]}
         else:
+            session.commit()
             return {
-                "content": [
-                    {
-                        "type": "text",
-                        "text": "Query executed successfully, but no rows were returned.",
-                    }
-                ]
+                "content": [{"type": "text", "text": "Query executed successfully."}]
             }
     except Exception as e:
-        error_time = datetime.now()
-        print(f"[{error_time.isoformat()}] ❌ Error: {str(e)}")
         return {
             "content": [{"type": "text", "text": f"Error executing query: {str(e)} "}]
         }
@@ -719,11 +520,9 @@ lucas_tools = create_sdk_mcp_server(
     tools=[
         calculate,
         compound_interest,
-        get_accounts,
         list_movements,
         aggregate_by_description,
         aggregate_transfers_by_holder,
-        summary_cashflow,
         get_date,
         execute_query,
         get_movements_schema,
@@ -731,19 +530,36 @@ lucas_tools = create_sdk_mcp_server(
 )
 
 
-# System prompt for financial assistant
-SYSTEM_PROMPT = """Eres un contador de finanzas personales especializado en análisis de gastos.
+if __name__ == "__main__":
+    import asyncio
+
+    async def main():
+        # Create Claude SDK client with tools
+        options = ClaudeAgentOptions(
+            model="claude-haiku-4-5",
+            mcp_servers={"Tools": lucas_tools},
+            permission_mode="bypassPermissions",
+            continue_conversation=True,
+            allowed_tools=[
+                "mcp__Tools__get_date",
+                "mcp__Tools__list_movements",
+                "mcp__Tools__aggregate_by_description",
+                "mcp__Tools__aggregate_transfers_by_holder",
+                "mcp__Tools__calculate",
+                "mcp__Tools__compound_interest",
+                "mcp__Tools__execute_query",
+                "mcp__Tools__get_movements_schema",
+            ],
+            system_prompt="""Eres un contador de finanzas personales especializado en análisis de gastos.
 
 IMPORTANTE - FLUJO OBLIGATORIO:
 1. SIEMPRE debes usar la herramienta get_date PRIMERO antes de cualquier consulta sobre fechas o movimientos
 2. Usa la fecha actual obtenida para calcular rangos de fechas correctamente
-3. Para consultar saldos, usa get_accounts.
-4. Luego usa list_movements con las fechas en formato ISO 8601 (YYYY-MM-DD). Puedes filtrar por descripción con search_term.
-5. Para análisis de patrones de gasto, usa aggregate_by_description para agrupar gastos por descripción
-6. Para análisis de transferencias, usa aggregate_transfers_by_holder para ver a quién transfieres
-7. Para obtener un resumen general de flujo de caja (ingresos vs gastos), usa summary_cashflow
-8. Si necesitas información más específica que no cubren las herramientas anteriores, puedes usar execute_query para consultas SQL directas, pero ten cuidado de escribir SQL válido.
-9. Si no conoces la estructura de la tabla movements, usa get_movements_schema.
+3. Luego usa list_movements con las fechas en formato ISO 8601 (YYYY-MM-DD)
+4. Para análisis de patrones de gasto, usa aggregate_by_description para agrupar gastos por descripción
+5. Para análisis de transferencias, usa aggregate_transfers_by_holder para ver a quién transfieres
+6. Si necesitas información más específica que no cubren las herramientas anteriores, puedes usar execute_query para consultas SQL directas, pero ten cuidado de escribir SQL válido.
+7. Si no conoces la estructura de la tabla movements, usa get_movements_schema.
 
 Cuando el usuario pregunte sobre períodos relativos como "la semana pasada", "este mes", etc:
 - PRIMERO llama a get_date para obtener la fecha actual
@@ -751,11 +567,9 @@ Cuando el usuario pregunte sobre períodos relativos como "la semana pasada", "e
 - Finalmente consulta los movimientos con list_movements o las herramientas de agregación
 
 Herramientas disponibles:
-- get_accounts: Obtiene los saldos actuales de las cuentas
-- list_movements: Lista movimientos individuales de todas las cuentas (con filtro opcional de búsqueda)
+- list_movements: Lista movimientos individuales de todas las cuentas
 - aggregate_by_description: Agrupa y suma movimientos por descripción para ver patrones de gasto
 - aggregate_transfers_by_holder: Agrupa transferencias por el nombre del beneficiario/remitente
-- summary_cashflow: Obtiene ingresos, gastos y flujo neto en un período
 - get_date: Obtiene la fecha actual
 - calculate: Realiza cálculos matemáticos
 - compound_interest: Calcula interés compuesto
@@ -763,19 +577,40 @@ Herramientas disponibles:
 - get_movements_schema: Obtiene la estructura de la tabla movements
 
 Tu objetivo es ayudar a los usuarios a entender su estado financiero y a tomar decisiones informadas sobre su dinero.
-"""
+""",
+        )
 
+        # Use context manager for automatic connection handling
+        async with ClaudeSDKClient(options=options) as client:
+            try:
+                print("💰 Asistente Financiero Personal")
+                print("Escribe 'exit' o 'quit' para salir\n")
 
-# Allowed tools list for agent options
-ALLOWED_TOOLS = [
-    "mcp__Tools__get_date",
-    "mcp__Tools__get_accounts",
-    "mcp__Tools__list_movements",
-    "mcp__Tools__aggregate_by_description",
-    "mcp__Tools__aggregate_transfers_by_holder",
-    "mcp__Tools__summary_cashflow",
-    "mcp__Tools__calculate",
-    "mcp__Tools__compound_interest",
-    "mcp__Tools__execute_query",
-    "mcp__Tools__get_movements_schema",
-]
+                while True:
+                    user_input = input("Tu: ")
+                    if user_input.lower() in ["exit", "quit"]:
+                        print("\n👋 ¡Hasta luego!")
+                        break
+
+                    # Send query to Claude
+                    await client.query(user_input)
+
+                    # Use receive_response() instead of receive_messages()
+                    # This maintains conversation context across turns
+                    async for message in client.receive_response():
+                        if isinstance(message, AssistantMessage):
+                            if message.content:
+                                for block in message.content:
+                                    if isinstance(block, TextBlock):
+                                        print(f"Claude: {block.text}")
+                                    elif isinstance(block, ToolUseBlock):
+                                        print(
+                                            f"Claude: Usando herramienta {block.name}"
+                                        )
+                    print()
+            except KeyboardInterrupt:
+                print("\n\n👋 Sesión interrumpida. ¡Hasta luego!")
+            except Exception as e:
+                print(f"❌ Error: {e}")
+
+    asyncio.run(main())
