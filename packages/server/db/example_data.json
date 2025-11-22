@@ -1,0 +1,104 @@
+{
+    "accounts": [
+        {
+            "id": "acc_01",
+            "type": "checking_account",
+            "name": "Main Checking",
+            "currency": "CLP",
+            "number": "123456789",
+            "official_name": "Cuenta Corriente",
+            "holder_id": "user_01",
+            "holder_name": "John Doe",
+            "refreshed_at": "2023-10-28T10:00:00Z"
+        }
+    ],
+    "balances": [
+        {
+            "id": 1,
+            "account_id": "acc_01",
+            "available": 1500000,
+            "current": 1500000,
+            "limit_amount": 500000,
+            "currency": "CLP"
+        }
+    ],
+    "movements": [
+        {
+            "id": "mov_001",
+            "account_id": "acc_01",
+            "object": "movement",
+            "amount": -5000,
+            "currency": "CLP",
+            "transaction_date": "2024-03-26T15:30:00Z",
+            "post_date": "2024-03-26T15:30:00Z",
+            "description": "Starbucks Coffee",
+            "type": "purchase",
+            "reference_id": "REF123",
+            "comment": "Morning coffee",
+            "pending": false,
+            "status": "confirmed",
+            "recipient_account": null,
+            "sender_account": null
+        },
+        {
+            "id": "mov_002",
+            "account_id": "acc_01",
+            "object": "movement",
+            "amount": 150000,
+            "currency": "CLP",
+            "transaction_date": "2024-03-25T10:00:00Z",
+            "post_date": "2024-03-25T10:00:00Z",
+            "description": "Transferencia de Maria",
+            "type": "transfer",
+            "reference_id": "REF456",
+            "comment": "Reimbursement",
+            "pending": false,
+            "status": "confirmed",
+            "recipient_account": null,
+            "sender_account": {
+                "holder_id": "user_02",
+                "holder_name": "Maria Smith",
+                "number": "987654321",
+                "institution": {
+                    "id": "inst_01",
+                    "name": "Banco de Chile",
+                    "country": "cl"
+                }
+            }
+        },
+        {
+            "id": "mov_003",
+            "account_id": "acc_01",
+            "object": "movement",
+            "amount": -25000,
+            "currency": "CLP",
+            "transaction_date": "2024-03-24T20:15:00Z",
+            "post_date": "2024-03-24T20:15:00Z",
+            "description": "Uber Ride",
+            "type": "service",
+            "reference_id": "REF789",
+            "comment": "Ride home",
+            "pending": false,
+            "status": "confirmed",
+            "recipient_account": null,
+            "sender_account": null
+        },
+        {
+            "id": "mov_004",
+            "account_id": "acc_01",
+            "object": "movement",
+            "amount": -10000,
+            "currency": "CLP",
+            "transaction_date": "2024-03-28T09:00:00Z",
+            "post_date": "2024-03-28T09:00:00Z",
+            "description": "Pending Charge",
+            "type": "purchase",
+            "reference_id": "REF999",
+            "comment": "Online purchase",
+            "pending": true,
+            "status": "pending",
+            "recipient_account": null,
+            "sender_account": null
+        }
+    ]
+}
