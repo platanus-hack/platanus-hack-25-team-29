@@ -227,57 +227,54 @@ def upsert_movement(session: Session, movement: Dict[str, Any], account_id: str,
 
 @router.post("/sync")
 def sync_fintoc_data(
-    link_token: Optional[str] = Query(None),
+    user_id: Optional[str] = Query(None),
     session: Session = Depends(get_session)
 ):
     """
     Fetch data from Fintoc and populate the database.
-    Uses LINK_TOKEN from env if not provided.
+    Requires that the user has already connected their bank account via the Fintoc widget.
+    The link token must be stored in the database before calling this endpoint.
+    
+    Returns 400 error if no bank account is connected.
     """
-    token = link_token or os.getenv("LINK_TOKEN")
-    if not token:
-        raise HTTPException(status_code=400, detail="No LINK_TOKEN provided and none in environment")
-
     try:
         # 1. Ensure User
-        user_id = get_or_create_user(session)
+        if not user_id:
+            user_id = get_or_create_user(session)
         
-        # 2. Fetch Accounts
+        # 2. Get link token from database
+        # The token should have been saved by the token_gatherer webhook
+        query = text("""
+            SELECT id FROM fintoc_links 
+            WHERE user_id = :user_id AND active = true
+            ORDER BY created_at DESC
+            LIMIT 1
+        """)
+        result = session.execute(query, {"user_id": user_id})
+        link_record = result.fetchone()
+        
+        if not link_record:
+            raise HTTPException(
+                status_code=400,
+                detail={
+                    "error": "NO_BANK_CONNECTED",
+                    "message": "No bank account connected. Please connect your bank account using the Fintoc widget first.",
+                    "instructions": "Use the Fintoc widget to connect your bank account before syncing data."
+                }
+            )
+        
+        # The link_id in the database IS the link_token from Fintoc
+        link_id = link_record[0]
+        token = link_id  # They are the same - token_gatherer stores the token as the link ID
+        
+        print(f"Using Link ID from database: {link_id}")
+        print(f"User ID: {user_id}")
+        
+        # 3. Fetch Accounts
         accounts = fetch_accounts(token)
         print(f"Fetched {len(accounts)} accounts")
         
-        # 3. Determine Link ID
-        # We'll try to find a 'link_id' or 'link' object in the account data
-        # If not present, we might have to fetch it or use a placeholder if we are desperate
-        # Usually Fintoc accounts have a 'link' property?
-        # If not, we'll assume we can't proceed without a valid link_id
-        
-        # Let's assume the first account has the link info if available
-        # If not, we'll use the token as a fallback (though incorrect, it satisfies NOT NULL if we upsert it)
-        # But 'link_token' is not the 'link_id'. 
-        # Use a hardcoded placeholder if we can't find it? No, that's bad.
-        # Let's check if we can fetch the link object.
-        
-        # Additional step: Fetch Link Details if possible
-        # For now, let's try to use the link_token. If the DB constraints are strict (UUID?), text is fine.
-        # But uniqueness might be an issue if we use token as ID.
-        
-        # Real Fintoc API: The account object usually contains `link_id`.
-        # If not, let's use the token as the ID for now, but prefix it to avoid confusion?
-        # Or better, create a link with ID = "link_from_token_" + token[:10]...
-        
-        link_id = None
-        if accounts and "link_id" in accounts[0]:
-            link_id = accounts[0]["link_id"]
-        
-        if not link_id:
-            # Fallback: Use a derived ID or the token itself if it looks like an ID
-            link_id = f"link_{token[-10:]}" if len(token) > 10 else f"link_{token}"
-            
-        print(f"Using Link ID: {link_id}")
-        
-        # Upsert Link
-        upsert_link(session, link_id, user_id)
+        # No need to upsert link - it already exists from token_gatherer
         
         total_movements = 0
         
