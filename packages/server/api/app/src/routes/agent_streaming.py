@@ -18,6 +18,11 @@ class AgentRequest(BaseModel):
     max_turns: int = 10
 
 
+class AgentResponse(BaseModel):
+    messages: list[dict]
+    error: str | None = None
+
+
 async def agent_stream(prompt: str, system_prompt: str | None, max_turns: int) -> AsyncIterator[str]:
     """Generator that yields SSE formatted messages from Claude Agent"""
     try:
@@ -93,3 +98,52 @@ async def agent_endpoint(request: AgentRequest):
             "X-Accel-Buffering": "no"  # Disable proxy buffering
         }
     )
+
+
+@router.post("/api/agent/complete", response_model=AgentResponse)
+async def agent_complete_endpoint(request: AgentRequest):
+    """Non-streaming endpoint that returns complete agent response"""
+    messages = []
+    
+    try:
+        # Create agent options with shared tools
+        options = ClaudeAgentOptions(
+            model="claude-haiku-4-5",
+            mcp_servers={"Tools": lucas_tools},
+            permission_mode="bypassPermissions",
+            continue_conversation=True,
+            allowed_tools=ALLOWED_TOOLS,
+            system_prompt=request.system_prompt or SYSTEM_PROMPT,
+        )
+
+        # Use async context manager for proper connection handling
+        async with ClaudeSDKClient(options=options) as client:
+            # Send the user's query
+            await client.query(request.prompt)
+
+            # Collect all responses from Claude
+            async for message in client.receive_response():
+                if isinstance(message, AssistantMessage):
+                    if message.content:
+                        for block in message.content:
+                            if isinstance(block, TextBlock):
+                                # Collect text content
+                                messages.append({
+                                    "type": "text",
+                                    "content": block.text
+                                })
+
+                            elif isinstance(block, ToolUseBlock):
+                                # Collect tool usage information
+                                messages.append({
+                                    "type": "tool_use",
+                                    "name": block.name,
+                                    "input": block.input,
+                                    "id": block.id
+                                })
+
+        return AgentResponse(messages=messages, error=None)
+
+    except Exception as e:
+        # Return error in response
+        return AgentResponse(messages=messages, error=str(e))
