@@ -1,36 +1,42 @@
 "use client"
-import { useState, useRef, useEffect } from "react"
-
-type Message = {
-  content: string
-  role: "user" | "assistant"
-  toolUses?: ToolUse[]
-}
-interface ToolUse {
-  name: string
-  input: any
-  id: string
-}
+import { useRef, useEffect, useState } from "react"
+import { useAppDispatch, useAppSelector } from "@/store/hooks"
+import {
+  addMessage,
+  updateLastMessage,
+  markLastMessageAsInterrupted,
+  clearAllMessages,
+  setInput,
+  clearInput,
+  setIsStreaming,
+  setToolActivity,
+  clearToolActivity,
+  resetChatUI,
+} from "@/store"
+import type { Message, ToolUse } from "@/store/types"
 
 export function ChatView() {
-  const [messages, setMessages] = useState<Message[]>([])
-  const [input, setInput] = useState("")
-  const [isStreaming, setIsStreaming] = useState(false)
-  const [toolActivity, setToolActivity] = useState("")
-  const messagesEndRef = useRef<HTMLDivElement>(null)
+  // Redux state selectors
+  const dispatch = useAppDispatch()
+  const messages = useAppSelector((state) => state.messages.messages)
+  const input = useAppSelector((state) => state.chatUI.input)
+  const isStreaming = useAppSelector((state) => state.chatUI.isStreaming)
+  const toolActivity = useAppSelector((state) => state.chatUI.toolActivity)
 
+  // Local UI state (not persisted)
+  const messagesEndRef = useRef<HTMLDivElement>(null)
+  const [showClearConfirm, setShowClearConfirm] = useState(false)
+
+  // Handle streaming interruption detection on mount
   useEffect(() => {
-    requestAnimationFrame(() => {
-      const savedMessages = localStorage.getItem("chat_messages");
-      if (savedMessages) {
-        try {
-          setMessages(JSON.parse(savedMessages));
-        } catch (error) {
-          console.error("Error parsing saved messages:", error);
-        }
-      }
-    });
-  }, [])
+    // If isStreaming was true when the page was refreshed, mark the last message as interrupted
+    if (isStreaming) {
+      dispatch(markLastMessageAsInterrupted())
+      dispatch(setIsStreaming(false))
+      dispatch(clearToolActivity())
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []) // Only run on mount - dispatch is stable, isStreaming value checked from persisted state
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -38,24 +44,39 @@ export function ChatView() {
 
   useEffect(scrollToBottom, [messages])
 
+  const handleClearChat = () => {
+    if (showClearConfirm) {
+      // User confirmed, clear everything
+      dispatch(clearAllMessages())
+      dispatch(resetChatUI())
+      setShowClearConfirm(false)
+    } else {
+      // First click, show confirmation
+      setShowClearConfirm(true)
+      // Auto-hide confirmation after 3 seconds
+      setTimeout(() => setShowClearConfirm(false), 3000)
+    }
+  }
+
   const sendMessage = async () => {
     if (!input.trim() || isStreaming) return
 
     const userMessage: Message = { role: 'user', content: input }
-    setMessages(prev => [...prev, userMessage]);
-    setInput('');
-    setIsStreaming(true);
-    setToolActivity('');
+    dispatch(addMessage(userMessage))
+    const currentInput = input // Store input before clearing
+    dispatch(clearInput())
+    dispatch(setIsStreaming(true))
+    dispatch(clearToolActivity())
 
-    let currentAssistantMessage = '';
-    let currentToolUses: ToolUse[] = [];
+    let currentAssistantMessage = ''
+    let currentToolUses: ToolUse[] = []
 
     try {
       const response = await fetch("http://localhost:8000/api/agent", {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          prompt: input,
+          prompt: currentInput,
           systemPrompt: 'You are a helpful AI assistant with access to tools.',
           maxTurns: 10
         })
@@ -78,22 +99,22 @@ export function ChatView() {
               if (parsed.type === "text") {
                 currentAssistantMessage += parsed.content
                 // Update the last message or create new one
-                setMessages(prev => {
-                  const newMessages = [...prev];
-                  const lastMsg = newMessages[newMessages.length - 1];
-                  
-                  if (lastMsg?.role === 'assistant') {
-                    lastMsg.content = currentAssistantMessage;
-                    lastMsg.toolUses = currentToolUses;
-                  } else {
-                    newMessages.push({
-                      role: 'assistant',
-                      content: currentAssistantMessage,
-                      toolUses: currentToolUses,
-                    });
-                  }
-                  return newMessages;
-                });
+                const lastMsg = messages[messages.length - 1]
+
+                if (lastMsg?.role === 'assistant') {
+                  // Update existing assistant message
+                  dispatch(updateLastMessage({
+                    content: currentAssistantMessage,
+                    toolUses: currentToolUses,
+                  }))
+                } else {
+                  // Create new assistant message
+                  dispatch(addMessage({
+                    role: 'assistant',
+                    content: currentAssistantMessage,
+                    toolUses: currentToolUses,
+                  }))
+                }
               } else if (parsed.type === "tool_use") {
                 const toolUse: ToolUse = {
                   name: parsed.name,
@@ -101,15 +122,15 @@ export function ChatView() {
                   id: parsed.id || `tool-${Date.now()}`,
                 };
                 currentToolUses.push(toolUse);
-                setToolActivity(`🔧 Using tool: ${parsed.name}`);
+                dispatch(setToolActivity(`🔧 Using tool: ${parsed.name}`))
               } else if (parsed.type === "tool_result") {
-                setToolActivity('✅ Tool completed');
-                setTimeout(() => setToolActivity(''), 2000);
+                dispatch(setToolActivity('✅ Tool completed'))
+                setTimeout(() => dispatch(clearToolActivity()), 2000);
               } else if (parsed.type === "done") {
-                setToolActivity("")
+                dispatch(clearToolActivity())
               } else if (parsed.type === "error") {
                 console.error("Agent error: ", parsed.error)
-                setToolActivity(`❌ Error: ${parsed.error}`);
+                dispatch(setToolActivity(`❌ Error: ${parsed.error}`))
               }
             } catch (e) {
               console.error("Parse error: ", e)
@@ -119,16 +140,15 @@ export function ChatView() {
 
       }
     } catch (e) {
-      console.error("Parse error: ", e)
-      setMessages(prev => [...prev, {
-        id: messages.length + 1,
+      console.error("Fetch error: ", e)
+      dispatch(addMessage({
         role: 'assistant',
         content: 'Sorry, an error occurred while processing your request.',
-      }]);
+      }))
 
     } finally {
-      setIsStreaming(false)
-      setToolActivity('')
+      dispatch(setIsStreaming(false))
+      dispatch(clearToolActivity())
     }
   }
 
@@ -146,9 +166,14 @@ export function ChatView() {
           >
             <div className="font-semibold mb-1">
               {msg.role === 'user' ? 'You' : '🤖 Agent'}
+              {msg.interrupted && (
+                <span className="ml-2 text-xs text-orange-600 font-normal">
+                  ⚠️ Interrupted
+                </span>
+              )}
             </div>
             <div className="whitespace-pre-wrap">{msg.content}</div>
-            
+
             {msg.toolUses && msg.toolUses.length > 0 && (
               <div className="mt-2 pt-2 border-t border-gray-300">
                 <div className="text-sm text-gray-600">Tools used:</div>
@@ -174,7 +199,7 @@ export function ChatView() {
         <input
           type="text"
           value={input}
-          onChange={(e) => setInput(e.target.value)}
+          onChange={(e) => dispatch(setInput(e.target.value))}
           onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
           placeholder="Ask the agent something..."
           className="flex-1 p-3 border rounded-lg"
@@ -186,6 +211,18 @@ export function ChatView() {
           className="px-6 py-3 bg-blue-500 text-white rounded-lg disabled:opacity-50 hover:bg-blue-600"
         >
           {isStreaming ? '⏳' : 'Send'}
+        </button>
+        <button
+          onClick={handleClearChat}
+          disabled={isStreaming}
+          className={`px-6 py-3 rounded-lg disabled:opacity-50 transition-colors ${
+            showClearConfirm
+              ? 'bg-red-600 text-white hover:bg-red-700'
+              : 'bg-gray-300 text-gray-700 hover:bg-gray-400'
+          }`}
+          title={showClearConfirm ? 'Click again to confirm' : 'Clear chat'}
+        >
+          {showClearConfirm ? '⚠️ Confirm?' : '🗑️'}
         </button>
       </div>
     </div>
