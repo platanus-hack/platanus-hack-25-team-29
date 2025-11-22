@@ -23,6 +23,8 @@ interface Account {
     name: string;
     account_number: string;
     currency: string;
+    institution_name?: string;
+    holder_name?: string;
 }
 
 interface MovementTableProps {
@@ -33,7 +35,15 @@ interface MovementTableProps {
 export function MovementTable({ movements, accounts = [] }: MovementTableProps) {
     const getAccountName = (accountId: string) => {
         const account = accounts.find(acc => acc.id === accountId);
-        return account?.name || 'Unknown Bank';
+        if (!account) return 'Unknown Bank';
+        
+        // Format: institution_name - name - holder_name
+        const parts = [];
+        if (account.institution_name) parts.push(account.institution_name);
+        if (account.name) parts.push(account.name);
+        if (account.holder_name) parts.push(account.holder_name);
+        
+        return parts.length > 0 ? parts.join(' - ') : 'Unknown Bank';
     };
     const formatCurrency = (amount: number, currency: string = 'CLP') => {
         return new Intl.NumberFormat('es-CL', {

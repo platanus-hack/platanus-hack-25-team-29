@@ -231,16 +231,36 @@ def get_accounts(
     session: Session = Depends(get_session)
 ):
     """
-    Get all accounts for a user from the database.
+    Get all accounts for a user from the database with institution information.
     """
     try:
         if not user_id:
             user_id = get_or_create_user(session)
         
         query = text("""
-            SELECT * FROM fintoc_accounts
-            WHERE user_id = :user_id
-            ORDER BY created_at DESC
+            SELECT 
+                fa.id,
+                fa.link_id,
+                fa.user_id,
+                fa.account_type,
+                fa.account_number,
+                fa.name,
+                fa.official_name,
+                fa.holder_name,
+                fa.currency,
+                fa.balance_available,
+                fa.balance_current,
+                fa.balance_limit,
+                fa.refreshed_at,
+                fa.created_at,
+                fa.updated_at,
+                fl.institution_name,
+                fl.institution_id,
+                fl.institution_country
+            FROM fintoc_accounts fa
+            LEFT JOIN fintoc_links fl ON fa.link_id = fl.id
+            WHERE fa.user_id = :user_id
+            ORDER BY fa.created_at DESC
         """)
         
         result = session.execute(query, {"user_id": user_id})
