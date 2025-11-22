@@ -4,6 +4,7 @@ import "./globals.css";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
 import { cookies } from "next/headers"
+import { ReduxProvider } from "./providers"
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -34,13 +35,15 @@ export default async function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <SidebarProvider defaultOpen={true}>
-          <AppSidebar />
-          <main className="flex-1 w-full">
-            <SidebarTrigger />
-            {children}
-          </main>
-        </SidebarProvider>
+        <ReduxProvider>
+          <SidebarProvider defaultOpen={true}>
+            <AppSidebar />
+            <main className="flex-1 w-full">
+              <SidebarTrigger />
+              {children}
+            </main>
+          </SidebarProvider>
+        </ReduxProvider>
       </body>
     </html>
   );
