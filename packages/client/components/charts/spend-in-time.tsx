@@ -1,38 +1,56 @@
 "use client"
 
-
-import { CartesianGrid, Line, LineChart, XAxis } from "recharts"
-
+import { CartesianGrid, Line, LineChart, XAxis, YAxis } from "recharts"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import {
-  ChartConfig,
-  ChartContainer,
-  ChartTooltip,
-  ChartTooltipContent,
-} from "@/components/ui/chart"
-
-const chartData = [
-  { month: "January", desktop: 186 },
-  { month: "February", desktop: 305 },
-  { month: "March", desktop: 237 },
-  { month: "April", desktop: 73 },
-  { month: "May", desktop: 209 },
-  { month: "June", desktop: 214 },
-]
+import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
+import { Movement } from "@/lib/types"
+import { subMonths, format, startOfMonth } from "date-fns"
+import { es } from "date-fns/locale"
 
 const chartConfig = {
-  desktop: {
-    label: "Desktop",
+  amount: {
+    label: "Gasto Mensual",
     color: "var(--chart-1)",
   },
 } satisfies ChartConfig
 
-export function SpendInTime() {
+export function SpendInTime({ movements }: { movements: Movement[] }) {
+  // Generar los últimos 12 meses (del mes pasado hacia atrás 11 meses más)
+  const today = new Date()
+  const months: Date[] = []
+  
+  for (let i = 11; i >= 0; i--) {
+    months.push(startOfMonth(subMonths(today, i)))
+  }
+
+  // Agrupar los movimientos por mes y sumar los gastos
+  const spendByMonth: Record<string, number> = {}
+
+  for (const mov of movements || []) {
+    if (!mov.post_date) continue
+    const dateObj = new Date(mov.post_date)
+    if (isNaN(dateObj.getTime())) continue
+    
+    // Solo considerar los gastos (amount < 0)
+    if (typeof mov.amount === 'number' && mov.amount < 0) {
+      const monthKey = format(dateObj, 'yyyy-MM')
+      spendByMonth[monthKey] = (spendByMonth[monthKey] || 0) + Math.abs(mov.amount)
+    }
+  }
+
+  // Formatear datos para la gráfica
+  const chartData = months.map((month) => ({
+    month: format(month, 'MMMM', { locale: es }),
+    monthShort: format(month, 'MMM', { locale: es }),
+    amount: spendByMonth[format(month, 'yyyy-MM')] || 0
+  }))
+
+
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Line Chart - Linear</CardTitle>
-        <CardDescription>January - June 2024</CardDescription>
+        <CardTitle>Gasto Mensual</CardTitle>
+        <CardDescription>Últimos 12 meses</CardDescription>
       </CardHeader>
       <CardContent>
         <ChartContainer config={chartConfig}>
@@ -46,20 +64,30 @@ export function SpendInTime() {
           >
             <CartesianGrid vertical={false} />
             <XAxis
-              dataKey="month"
+              dataKey="monthShort"
               tickLine={false}
               axisLine={false}
               tickMargin={8}
-              tickFormatter={(value) => value.slice(0, 3)}
+            />
+            <YAxis
+              tickLine={false}
+              axisLine={false}
+              tickMargin={8}
+              tickFormatter={(value) => `$${(value / 1000).toLocaleString()}k`}
             />
             <ChartTooltip
               cursor={false}
-              content={<ChartTooltipContent hideLabel />}
+              content={
+                <ChartTooltipContent
+                  labelKey="month"
+                  formatter={(value) => `$${Number(value).toLocaleString()}`}
+                />
+              }
             />
             <Line
-              dataKey="desktop"
-              type="linear"
-              stroke="var(--color-desktop)"
+              dataKey="amount"
+              type="monotone"
+              stroke="var(--color-amount)"
               strokeWidth={2}
               dot={false}
             />
