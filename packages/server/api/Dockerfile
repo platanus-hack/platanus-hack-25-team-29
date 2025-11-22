@@ -25,6 +25,7 @@ ENV PORT=8080
 EXPOSE 8080
 
 RUN echo '#!/bin/bash\n\
+pkill ngrok 2>/dev/null || true\n\
 uv run uvicorn app.main:app --host 0.0.0.0 --port $PORT &\n\
 sleep 3\n\
 ngrok http $PORT --log stdout\n\
