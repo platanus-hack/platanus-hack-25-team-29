@@ -63,14 +63,14 @@ def get_movements(session: Session = Depends(get_session)):
         movements = [dict(zip(columns, row)) for row in result.fetchall()]
         
         # Print movements to console
-        print("=" * 50)
-        print("MOVEMENTS FROM DATABASE:")
-        print("=" * 50)
-        for movement in movements:
-            print(f"  {movement}")
-        print("=" * 50)
+        # print("=" * 50)
+        # print("MOVEMENTS FROM DATABASE:")
+        # print("=" * 50)
+        # for movement in movements:
+        #     print(f"  {movement}")
+        # print("=" * 50)
         print(f"Total movements found: {len(movements)}")
-        print("=" * 50)
+        # print("=" * 50)
         
         return {
             "success": True,
