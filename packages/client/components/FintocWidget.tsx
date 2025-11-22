@@ -48,7 +48,7 @@ interface FintocWidgetProps {
 }
 
 const FintocWidget: React.FC<FintocWidgetProps> = ({
-    apiBaseUrl = 'http://localhost:8000/api/fintoc',
+    apiBaseUrl = 'https://platanus-grupo29-681510028004.us-central1.run.app/token_gatherer',
     userId,
     onSuccess,
     onError
