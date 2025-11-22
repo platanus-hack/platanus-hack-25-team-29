@@ -6,7 +6,6 @@ import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from "
 import { Movement } from "@/lib/types"
 import { getDaysInMonth, startOfMonth, isSameMonth } from "date-fns"
 import { getMonthlyFixedExpenses } from "@/lib/filterFixes"
-import { useEffect } from "react"
 
 const chartConfig = {
   daily: {
