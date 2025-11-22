@@ -273,6 +273,109 @@ async def handle_link_token_webhook(
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@router.post("/save-link")
+async def save_link_token(
+    request: Request,
+    session: Session = Depends(get_session)
+):
+    """
+    Direct endpoint to save link token from client
+    Alternative to webhook for when webhook is not accessible
+    This is called by the frontend after successful widget connection
+    """
+    try:
+        data = await request.json()
+        link_token = data.get("link_token")
+        user_id = data.get("user_id")
+        
+        if not link_token:
+            raise HTTPException(status_code=400, detail="link_token is required")
+        
+        print(f"📥 Saving link token from client for user: {user_id or 'default'}")
+        
+        # Get or create user
+        if not user_id:
+            result = session.execute(text("SELECT id FROM users LIMIT 1"))
+            user = result.fetchone()
+            if user:
+                user_id = str(user[0])
+            else:
+                session.execute(
+                    text("INSERT INTO users (email) VALUES (:email)"),
+                    {"email": "default@example.com"}
+                )
+                session.commit()
+                result = session.execute(text("SELECT id FROM users WHERE email = :email"), 
+                                       {"email": "default@example.com"})
+                user_id = str(result.scalar())
+        
+        print(f"📥 Processing link token for user {user_id}")
+        
+        # Exchange the link token
+        try:
+            link_credentials = exchange_link_token(link_token)
+            link_id = link_credentials.get("link_id")
+            access_token = link_credentials.get("access_token")
+            
+            if not link_id or not access_token:
+                raise Exception("Missing link_id or access_token")
+            
+            full_link_token = f"{link_id}_token_{access_token}"
+            print(f"✅ Got link credentials - link_id: {link_id}")
+            
+        except Exception as e:
+            print(f"❌ Error exchanging link token: {e}")
+            raise HTTPException(status_code=500, detail=f"Failed to exchange link token: {str(e)}")
+        
+        # Save to database
+        check_query = text("""
+            SELECT id FROM fintoc_links 
+            WHERE user_id = :user_id AND id = :link_id
+        """)
+        existing = session.execute(
+            check_query, 
+            {"user_id": user_id, "link_id": full_link_token}
+        ).fetchone()
+        
+        if not existing:
+            insert_query = text("""
+                INSERT INTO fintoc_links (
+                    id, user_id, holder_id, institution_id, 
+                    active, status, created_at
+                )
+                VALUES (
+                    :id, :user_id, :holder_id, :institution_id,
+                    true, 'active', NOW()
+                )
+            """)
+            
+            session.execute(insert_query, {
+                "id": full_link_token,
+                "user_id": user_id,
+                "holder_id": "unknown",
+                "institution_id": "unknown"
+            })
+            session.commit()
+            
+            print(f"💾 Link token saved for user {user_id}")
+        else:
+            print(f"ℹ️ Link already exists for user {user_id}")
+        
+        return JSONResponse(content={
+            "status": "success",
+            "message": "Link token saved",
+            "link_id": link_id,
+            "user_id": user_id
+        })
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"❌ Error: {e}")
+        session.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @router.get("/status")
 async def get_fintoc_status():
     """
