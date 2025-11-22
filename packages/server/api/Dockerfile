@@ -24,7 +24,6 @@ RUN uv sync --frozen
 ENV PORT=8080
 EXPOSE 8080
 
-# Create startup script
 RUN echo '#!/bin/bash\n\
 uv run uvicorn app.main:app --host 0.0.0.0 --port $PORT &\n\
 sleep 3\n\
