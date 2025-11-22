@@ -42,7 +42,7 @@ def fetch_movements(account_id: str, link_token: str) -> List[Dict[str, Any]]:
     
     all_movements = []
     page = 1
-    per_page = 100
+    per_page = 300
     
     print(f"Fetching movements for account: {account_id}")
     
