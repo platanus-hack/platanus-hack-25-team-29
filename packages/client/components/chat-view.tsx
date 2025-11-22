@@ -51,7 +51,7 @@ export function ChatView() {
     let currentToolUses: ToolUse[] = [];
 
     try {
-      const response = await fetch("/api/agent", {
+      const response = await fetch("http://localhost:8000/api/agent", {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -96,12 +96,12 @@ export function ChatView() {
                 });
               } else if (parsed.type === "tool_use") {
                 const toolUse: ToolUse = {
-                  name: parsed.tool_name,
-                  input: parsed.tool_input,
-                  id: parsed.tool_id,
+                  name: parsed.name,
+                  input: parsed.input,
+                  id: parsed.id || `tool-${Date.now()}`,
                 };
                 currentToolUses.push(toolUse);
-                setToolActivity(`🔧 Using tool: ${parsed.tool_name}`);
+                setToolActivity(`🔧 Using tool: ${parsed.name}`);
               } else if (parsed.type === "tool_result") {
                 setToolActivity('✅ Tool completed');
                 setTimeout(() => setToolActivity(''), 2000);
