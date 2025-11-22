@@ -2,10 +2,18 @@
  * Shared types for Redux store
  */
 
+export type ToolStatus = "pending" | "executing" | "completed" | "error"
+
 export interface ToolUse {
   name: string
   input: any
   id: string
+  status?: ToolStatus
+  timestamp?: number
+  duration?: number
+  summary?: string
+  result?: any
+  error?: string
 }
 
 export interface Message {

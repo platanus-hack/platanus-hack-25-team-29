@@ -49,11 +49,12 @@ async def agent_stream(prompt: str, system_prompt: str | None, max_turns: int) -
                                 yield f"data: {json.dumps(event_data)}\n\n"
 
                             elif isinstance(block, ToolUseBlock):
-                                # Stream tool usage information
+                                # Stream tool usage information with metadata
                                 event_data = {
                                     "type": "tool_use",
                                     "name": block.name,
-                                    "input": block.input
+                                    "input": block.input,
+                                    "id": block.id  # Include tool ID for tracking
                                 }
                                 yield f"data: {json.dumps(event_data)}\n\n"
 
