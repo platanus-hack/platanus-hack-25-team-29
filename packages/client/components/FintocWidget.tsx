@@ -50,7 +50,7 @@ interface FintocWidgetProps {
 }
 
 const FintocWidget: React.FC<FintocWidgetProps> = ({
-    apiBaseUrl = 'https://platanus-grupo29-681510028004.us-central1.run.app/token_gatherer',
+    apiBaseUrl = 'https://platanus-grupo29-681510028004.us-central1.run.app/api/fintoc',
     userId,
     onSuccess,
     onError
@@ -198,18 +198,61 @@ const FintocWidget: React.FC<FintocWidgetProps> = ({
                 publicKey: config.public_key,
                 webhookUrl: config.webhook_url,
                 country: config.country,
-                onSuccess: (link: any) => {
+                onSuccess: async (link: any) => {
                     console.log('✅ Widget success callback triggered:', link);
                     setWidgetInstance(null);
                     setError('');
 
-                    // Call parent success callback
-                    if (onSuccess) {
-                        onSuccess();
-                    }
+                    // Extract link token from the response
+                    const linkToken = link?.link_token || link?.token;
+                    
+                    if (linkToken) {
+                        try {
+                            console.log('📤 Sending link token to backend...');
+                            
+                            // Send link token to backend
+                            const saveUrl = userId
+                                ? `${apiBaseUrl}/save-link?user_id=${userId}`
+                                : `${apiBaseUrl}/save-link`;
+                            
+                            const response = await fetch(saveUrl, {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                },
+                                body: JSON.stringify({
+                                    link_token: linkToken,
+                                    user_id: userId
+                                })
+                            });
 
-                    // Show success message
-                    alert('Success! Syncing data...');
+                            if (!response.ok) {
+                                const errorData = await response.json().catch(() => ({}));
+                                throw new Error(errorData.detail || 'Failed to save link token');
+                            }
+
+                            console.log('✅ Link token saved successfully');
+                            alert('Success! Bank connected. You can now sync your data.');
+                            
+                            // Call parent success callback
+                            if (onSuccess) {
+                                onSuccess();
+                            }
+                        } catch (error: any) {
+                            console.error('❌ Error saving link token:', error);
+                            setError('Bank connected but failed to save. Please try syncing manually or contact support.');
+                            
+                            if (onError) {
+                                onError(error.message);
+                            }
+                        }
+                    } else {
+                        console.warn('⚠️ No link token received from widget');
+                        alert('Bank connected! You can now sync your data.');
+                        if (onSuccess) {
+                            onSuccess();
+                        }
+                    }
                 },
                 onExit: () => {
                     console.log('👋 Widget exited');

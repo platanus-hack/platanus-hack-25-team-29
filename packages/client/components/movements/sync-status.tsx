@@ -7,7 +7,7 @@ interface SyncResponse {
     accounts_synced: number;
     movements_synced: number;
     user_id: string;
-    link_id: string;
+    token: string;
 }
 
 interface SyncStatusProps {
@@ -61,8 +61,8 @@ export function SyncStatus({ syncResult, error }: SyncStatusProps) {
                             <p className="text-xs font-mono text-green-900 truncate">{syncResult.user_id}</p>
                         </div>
                         <div className="space-y-1">
-                            <p className="text-xs text-green-700 font-medium uppercase tracking-wide">Link ID</p>
-                            <p className="text-xs font-mono text-green-900 truncate">{syncResult.link_id.substring(0, 20)}...</p>
+                            <p className="text-xs text-green-700 font-medium uppercase tracking-wide">Token</p>
+                            <p className="text-xs font-mono text-green-900 truncate">{syncResult.token}</p>
                         </div>
                     </div>
                 </CardContent>
