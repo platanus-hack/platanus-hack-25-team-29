@@ -1,21 +1,23 @@
 "use client"
-
-import { Textarea } from "@/components/ui/textarea"
-import { Button } from "./ui/button"
-import { SendHorizontal } from "lucide-react"
 import { useState, useRef, useEffect } from "react"
-import { ScrollArea } from "./ui/scroll-area"
-import { cn } from "@/lib/utils"
 
 type Message = {
-  id: number
   content: string
   role: "user" | "assistant"
+  toolUses?: ToolUse[]
+}
+interface ToolUse {
+  name: string
+  input: any
+  id: string
 }
 
 export function ChatView() {
   const [messages, setMessages] = useState<Message[]>([])
-  const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const [input, setInput] = useState("")
+  const [isStreaming, setIsStreaming] = useState(false)
+  const [toolActivity, setToolActivity] = useState("")
+  const messagesEndRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     requestAnimationFrame(() => {
@@ -30,84 +32,161 @@ export function ChatView() {
     });
   }, [])
 
-  const handleSendMessage = async (message: string) => {
-    if (!message) return
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }
 
-    setMessages((prevMessages: Message[]) => {
-      const userMessage: Message = { id: prevMessages.length + 1, content: message, role: "user" };
-      const updatedMessages = [...prevMessages, userMessage];
-      localStorage.setItem("chat_messages", JSON.stringify(updatedMessages));
-      return updatedMessages;
-    });
+  useEffect(scrollToBottom, [messages])
 
-    if (textareaRef.current) {
-      textareaRef.current.value = "";
-    }
+  const sendMessage = async () => {
+    if (!input.trim() || isStreaming) return
 
-    await new Promise((resolve) => setTimeout(resolve, 2000));
+    const userMessage: Message = { role: 'user', content: input }
+    setMessages(prev => [...prev, userMessage]);
+    setInput('');
+    setIsStreaming(true);
+    setToolActivity('');
 
-    const response = await Promise.resolve({
-      json: () => Promise.resolve({
-        choices: [{ message: { content: "Flaco, te gastaste toda la plata!" } }]
+    let currentAssistantMessage = '';
+    let currentToolUses: ToolUse[] = [];
+
+    try {
+      const response = await fetch("/api/agent", {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          prompt: input,
+          systemPrompt: 'You are a helpful AI assistant with access to tools.',
+          maxTurns: 10
+        })
       })
-    })
-    const data = await response.json()
 
-    setMessages((prevMessages: Message[]) => {
-      const assistantMessage: Message = {
-        id: prevMessages.length + 1,
-        content: data.choices[0].message.content,
-        role: "assistant"
-      };
-      const updatedMessages = [...prevMessages, assistantMessage];
-      localStorage.setItem("chat_messages", JSON.stringify(updatedMessages));
-      return updatedMessages;
-    });
+      const reader = response.body?.getReader()
+      const decoder = new TextDecoder()
+
+      while(true) {
+        const { done, value } = await reader!.read();
+        if (done) break;
+
+        const chunk = decoder.decode(value);
+        const lines = chunk.split('\n');
+        for (const line of lines) {
+          if (line.startsWith("data: ")) {
+            const data = line.slice(6)
+            try {
+              const parsed = JSON.parse(data)
+              if (parsed.type === "text") {
+                currentAssistantMessage += parsed.content
+                // Update the last message or create new one
+                setMessages(prev => {
+                  const newMessages = [...prev];
+                  const lastMsg = newMessages[newMessages.length - 1];
+                  
+                  if (lastMsg?.role === 'assistant') {
+                    lastMsg.content = currentAssistantMessage;
+                    lastMsg.toolUses = currentToolUses;
+                  } else {
+                    newMessages.push({
+                      role: 'assistant',
+                      content: currentAssistantMessage,
+                      toolUses: currentToolUses,
+                    });
+                  }
+                  return newMessages;
+                });
+              } else if (parsed.type === "tool_use") {
+                const toolUse: ToolUse = {
+                  name: parsed.tool_name,
+                  input: parsed.tool_input,
+                  id: parsed.tool_id,
+                };
+                currentToolUses.push(toolUse);
+                setToolActivity(`🔧 Using tool: ${parsed.tool_name}`);
+              } else if (parsed.type === "tool_result") {
+                setToolActivity('✅ Tool completed');
+                setTimeout(() => setToolActivity(''), 2000);
+              } else if (parsed.type === "done") {
+                setToolActivity("")
+              } else if (parsed.type === "error") {
+                console.error("Agent error: ", parsed.error)
+                setToolActivity(`❌ Error: ${parsed.error}`);
+              }
+            } catch (e) {
+              console.error("Parse error: ", e)
+            }
+          }
+        }
+
+      }
+    } catch (e) {
+      console.error("Parse error: ", e)
+      setMessages(prev => [...prev, {
+        id: messages.length + 1,
+        role: 'assistant',
+        content: 'Sorry, an error occurred while processing your request.',
+      }]);
+
+    } finally {
+      setIsStreaming(false)
+      setToolActivity('')
+    }
   }
 
   return (
-    <div className="flex flex-col w-full max-h-screen">
-      <ScrollArea className="h-160 max-h-160 px-50 py-10">
-        <div className="flex flex-col gap-2">
-          {messages.map((message) => (
-            <div
-              key={message.id}
-              className={
-                message.role === "user"
-                  ? "flex justify-end my-2"
-                  : "flex justify-start my-2"
-              }
-            >
-              <div className={cn(
-                "rounded-lg px-4 py-2 max-w-xl",
-                message.role === "user" ? "bg-gray-100" : "bg-primary text-primary-foreground"
-              )}>
-                <p>{message.content}</p>
-              </div>
+    <div className="flex flex-col h-screen w-full mx-auto p-4">
+      <div className="flex-1 overflow-y-auto space-y-4 mb-4">
+        {messages.map((msg, idx) => (
+          <div
+            key={idx}
+            className={`p-4 rounded-lg ${
+              msg.role === 'user'
+                ? 'bg-blue-100 ml-auto max-w-[80%]'
+                : 'bg-gray-100 mr-auto max-w-[80%]'
+            }`}
+          >
+            <div className="font-semibold mb-1">
+              {msg.role === 'user' ? 'You' : '🤖 Agent'}
             </div>
-          ))}
+            <div className="whitespace-pre-wrap">{msg.content}</div>
+            
+            {msg.toolUses && msg.toolUses.length > 0 && (
+              <div className="mt-2 pt-2 border-t border-gray-300">
+                <div className="text-sm text-gray-600">Tools used:</div>
+                {msg.toolUses.map((tool, i) => (
+                  <div key={i} className="text-xs bg-gray-200 p-2 mt-1 rounded">
+                    <span className="font-mono">{tool.name}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        ))}
+        <div ref={messagesEndRef} />
+      </div>
+
+      {toolActivity && (
+        <div className="mb-2 text-sm text-gray-600 animate-pulse">
+          {toolActivity}
         </div>
-      </ScrollArea>
-      <div className="flex gap-2 w-full bg-gray-100 p-4 h-50 justify-center">
-        <Textarea
-          ref={textareaRef}
-          className="rounded-lg bg-background w-xl max-h-30 overflow-y-auto"
-          rows={3}
-          placeholder="Pregúntale algo a Lucas..."
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' && !e.shiftKey) {
-              e.preventDefault();
-              handleSendMessage(textareaRef.current?.value || "");
-            }
-          }}
+      )}
+
+      <div className="flex gap-2">
+        <input
+          type="text"
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
+          placeholder="Ask the agent something..."
+          className="flex-1 p-3 border rounded-lg"
+          disabled={isStreaming}
         />
-        <Button
-          variant="outline"
-          size="icon"
-          onClick={() => handleSendMessage(textareaRef.current?.value || "")}
+        <button
+          onClick={sendMessage}
+          disabled={isStreaming}
+          className="px-6 py-3 bg-blue-500 text-white rounded-lg disabled:opacity-50 hover:bg-blue-600"
         >
-          <SendHorizontal />
-        </Button>
+          {isStreaming ? '⏳' : 'Send'}
+        </button>
       </div>
     </div>
   )
