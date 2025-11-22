@@ -33,6 +33,9 @@ import remarkGfm from "remark-gfm"
 import { EnhancedToolCard } from "./enhanced-tool-card"
 import { InlineToolStatus } from "./inline-tool-status"
 
+// API Configuration
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://platanus-grupo29-681510028004.us-central1.run.app'
+
 // --- 1. Smooth Cursor ---
 const SmoothCursor = () => (
   <motion.span
@@ -271,7 +274,7 @@ export function ChatView() {
     let assistantMessageCreated = false
 
     try {
-      const response = await fetch(`/api/agent`, {
+      const response = await fetch(`${API_BASE_URL}/api/agent`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
