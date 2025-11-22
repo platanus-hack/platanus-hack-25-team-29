@@ -232,7 +232,6 @@ const FintocWidget: React.FC<FintocWidgetProps> = ({
                             }
 
                             console.log('✅ Link token saved successfully');
-                            alert('Success! Bank connected. You can now sync your data.');
 
                             // Call parent success callback
                             if (onSuccess) {
@@ -248,7 +247,6 @@ const FintocWidget: React.FC<FintocWidgetProps> = ({
                         }
                     } else {
                         console.warn('⚠️ No link token received from widget');
-                        alert('Bank connected! You can now sync your data.');
                         if (onSuccess) {
                             onSuccess();
                         }

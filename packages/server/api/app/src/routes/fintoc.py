@@ -118,7 +118,7 @@ def upsert_link(session: Session, link_id: str, user_id: str, token: str):
     # Fetch link details from Fintoc API
     link_details = fetch_link_details(link_id, token)
     
-    # Extract information
+    # Extract information from Fintoc response
     holder_id = link_details.get("holder_id", "unknown")
     holder_type = link_details.get("holder_type")
     username = link_details.get("username")
@@ -130,19 +130,24 @@ def upsert_link(session: Session, link_id: str, user_id: str, token: str):
     
     mode = link_details.get("mode")
     status = link_details.get("status", "active")
+    active = link_details.get("active", True)
+    refresh_status = link_details.get("refresh_status")
+    last_refreshed_at = link_details.get("last_time_refreshed")
     
     print(f"Upserting link with institution: {institution_name or 'Unknown'}")
+    print(f"  - Link ID: {link_id}")
+    print(f"  - Full token: {token[:50]}...")
     
     query = text("""
         INSERT INTO fintoc_links (
             id, user_id, holder_id, username, holder_type,
             institution_id, institution_name, institution_country,
-            mode, active, status
+            mode, active, status, refresh_status, last_refreshed_at
         )
         VALUES (
             :id, :user_id, :holder_id, :username, :holder_type,
             :institution_id, :institution_name, :institution_country,
-            :mode, true, :status
+            :mode, :active, :status, :refresh_status, :last_refreshed_at
         )
         ON CONFLICT (user_id, id) DO UPDATE SET
             holder_id = EXCLUDED.holder_id,
@@ -152,12 +157,15 @@ def upsert_link(session: Session, link_id: str, user_id: str, token: str):
             institution_name = EXCLUDED.institution_name,
             institution_country = EXCLUDED.institution_country,
             mode = EXCLUDED.mode,
+            active = EXCLUDED.active,
             status = EXCLUDED.status,
+            refresh_status = EXCLUDED.refresh_status,
+            last_refreshed_at = EXCLUDED.last_refreshed_at,
             updated_at = NOW()
     """)
     
     session.execute(query, {
-        "id": link_id,
+        "id": token,  # Save the full token as ID
         "user_id": user_id,
         "holder_id": holder_id,
         "username": username,
@@ -166,7 +174,10 @@ def upsert_link(session: Session, link_id: str, user_id: str, token: str):
         "institution_name": institution_name,
         "institution_country": institution_country,
         "mode": mode,
-        "status": status
+        "active": active,
+        "status": status,
+        "refresh_status": refresh_status,
+        "last_refreshed_at": last_refreshed_at
     })
 
 def upsert_account(session: Session, account: Dict[str, Any], link_id: str, user_id: str):
@@ -430,13 +441,14 @@ def sync_fintoc_data(
         link_id = token.split("_token_")[0] if "_token_" in token else token
         
         # Upsert the link with full details from Fintoc API
+        # Note: We save the full token as the ID in fintoc_links
         upsert_link(session, link_id, user_id, token)
         
         total_movements = 0
         
         for account in accounts:
-            # Upsert Account
-            upsert_account(session, account, link_id, user_id)
+            # Upsert Account - use full token as link_id
+            upsert_account(session, account, token, user_id)
             
             account_id = account.get("id")
             if not account_id:
@@ -446,7 +458,8 @@ def sync_fintoc_data(
             movements = fetch_movements(account_id, token)
             
             for mov in movements:
-                upsert_movement(session, mov, account_id, link_id, user_id)
+                # Use full token as link_id
+                upsert_movement(session, mov, account_id, token, user_id)
             
             total_movements += len(movements)
             
