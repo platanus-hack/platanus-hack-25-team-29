@@ -105,7 +105,11 @@ def fetch_link_details(link_id: str, token: str) -> Dict[str, Any]:
     
     if response.status_code == 200:
         data = response.json()
+        # Handle nested response structure if present
+        if isinstance(data, dict) and "data" in data:
+            data = data["data"]
         print(f"Successfully fetched link details")
+        print(f"Link details keys: {list(data.keys()) if isinstance(data, dict) else 'Not a dict'}")
         return data
     else:
         print(f"Warning: Could not fetch link details: {response.status_code} - {response.text}")
@@ -118,25 +122,35 @@ def upsert_link(session: Session, link_id: str, user_id: str, token: str):
     # Fetch link details from Fintoc API
     link_details = fetch_link_details(link_id, token)
     
+    # Extract link ID from API response, fallback to extracted link_id if API fails
+    link_id_from_api = link_details.get("id") if link_details else None
+    
+    # If API call failed or didn't return id, use the extracted link_id as fallback
+    if not link_id_from_api:
+        print(f"⚠️ Warning: Could not get link ID from API, using extracted link_id: {link_id}")
+        link_id_from_api = link_id
+    
     # Extract information from Fintoc response
-    holder_id = link_details.get("holder_id", "unknown")
-    holder_type = link_details.get("holder_type")
-    username = link_details.get("username")
+    holder_id = link_details.get("holder_id", "unknown") if link_details else "unknown"
+    holder_type = link_details.get("holder_type") if link_details else None
+    username = link_details.get("username") if link_details else None
     
-    institution = link_details.get("institution", {})
-    institution_id = institution.get("id", "unknown")
-    institution_name = institution.get("name")
-    institution_country = institution.get("country")
+    institution = link_details.get("institution", {}) if link_details else {}
+    institution_id = institution.get("id", "unknown") if institution else "unknown"
+    institution_name = institution.get("name") if institution else None
+    institution_country = institution.get("country") if institution else None
     
-    mode = link_details.get("mode")
-    status = link_details.get("status", "active")
-    active = link_details.get("active", True)
-    refresh_status = link_details.get("refresh_status")
-    last_refreshed_at = link_details.get("last_time_refreshed")
+    mode = link_details.get("mode") if link_details else None
+    status = link_details.get("status", "active") if link_details else "active"
+    active = link_details.get("active", True) if link_details else True
+    refresh_status = link_details.get("refresh_status") if link_details else None
+    last_refreshed_at = link_details.get("last_time_refreshed") if link_details else None
     
-    print(f"Upserting link with institution: {institution_name or 'Unknown'}")
-    print(f"  - Link ID: {link_id}")
-    print(f"  - Full token: {token[:50]}...")
+    print(f"Upserting link:")
+    print(f"  - Link ID: {link_id_from_api}")
+    print(f"  - Institution: {institution_name or 'Unknown'}")
+    print(f"  - Institution ID: {institution_id}")
+    print(f"  - Institution Country: {institution_country}")
     
     query = text("""
         INSERT INTO fintoc_links (
@@ -165,7 +179,7 @@ def upsert_link(session: Session, link_id: str, user_id: str, token: str):
     """)
     
     session.execute(query, {
-        "id": token,  # Save the full token as ID
+        "id": link_id_from_api,  # Use link ID from API or fallback to extracted link_id
         "user_id": user_id,
         "holder_id": holder_id,
         "username": username,
