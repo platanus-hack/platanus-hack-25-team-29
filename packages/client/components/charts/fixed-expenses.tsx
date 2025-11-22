@@ -1,42 +1,42 @@
 "use client"
 import { Card, CardHeader, CardTitle, CardContent } from "../ui/card"
 import { Table, TableHeader, TableBody, TableRow, TableCell, TableHead } from "../ui/table"
+import { Movement } from "@/lib/types"
+import { getMonthlyFixedExpenses } from "@/lib/filterFixes"
+import { ScrollArea } from "../ui/scroll-area"
 
-const fixedExpenses = [
-  { name: "Netflix", amount: 10000 },
-  { name: "Claro", amount: 20000 },
-  { name: "Spotify", amount: 30000 },
-  { name: "Amazon Prime", amount: 40000 },
-  { name: "Disney+", amount: 50000 },
-]
 
-export function FixedExpenses() {
+
+export function FixedExpenses({ movements }: { movements: Movement[] }) {
+  const fixedExpenses = getMonthlyFixedExpenses(movements)
   return (
     <Card>
       <CardHeader>
         <CardTitle>Fixed Expenses</CardTitle>
       </CardHeader>
       <CardContent>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead></TableHead>
-              <TableHead>Monto</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {fixedExpenses.map((expense) => (
-              <TableRow key={expense.name}>
-                <TableCell>{expense.name}</TableCell>
-                <TableCell>${expense.amount.toLocaleString()}</TableCell>
+        <ScrollArea className="h-60">
+          <Table className="">
+            <TableHeader>
+              <TableRow>
+                <TableHead></TableHead>
+                <TableHead>Monto</TableHead>
               </TableRow>
-            ))}
-            <TableRow>
-              <TableCell className="font-bold">Total</TableCell>
-              <TableCell className="font-bold">${fixedExpenses.reduce((acc, expense) => acc + expense.amount, 0).toLocaleString()}</TableCell>
-            </TableRow>
-          </TableBody>
-        </Table>
+            </TableHeader>
+            <TableBody>
+              {fixedExpenses.map((expense) => (
+                <TableRow key={expense.id}>
+                  <TableCell className="max-w-[220px] truncate">{expense.description}</TableCell>
+                  <TableCell className="text-right pr-4" >$ {(expense.amount * -1).toLocaleString()}</TableCell>
+                </TableRow>
+              ))}
+              <TableRow>
+                <TableCell className="font-bold">Total</TableCell>
+                <TableCell className="font-bold text-right pr-4">${fixedExpenses.reduce((acc, expense) => acc + expense.amount, 0).toLocaleString()}</TableCell>
+              </TableRow>
+            </TableBody>
+          </Table>
+        </ScrollArea>
       </CardContent>
     </Card>
   )
