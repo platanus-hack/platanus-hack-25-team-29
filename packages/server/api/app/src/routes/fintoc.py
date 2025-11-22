@@ -118,8 +118,7 @@ def upsert_link(session: Session, link_id: str, user_id: str, token: str):
     # Fetch link details from Fintoc API
     link_details = fetch_link_details(link_id, token)
     
-    # Extract information from Fintoc response (matching the API docs structure)
-    link_id_from_api = link_details.get("id")  # "link_nMNejK7BT8oGbvO4"
+    # Extract information from Fintoc response
     holder_id = link_details.get("holder_id", "unknown")
     holder_type = link_details.get("holder_type")
     username = link_details.get("username")
@@ -133,10 +132,10 @@ def upsert_link(session: Session, link_id: str, user_id: str, token: str):
     status = link_details.get("status", "active")
     active = link_details.get("active", True)
     refresh_status = link_details.get("refresh_status")
-    last_refreshed_at = link_details.get("last_time_refreshed")  # Note: API uses "last_time_refreshed"
+    last_refreshed_at = link_details.get("last_time_refreshed")
     
     print(f"Upserting link with institution: {institution_name or 'Unknown'}")
-    print(f"  - Link ID: {link_id_from_api}")
+    print(f"  - Link ID: {link_id}")
     print(f"  - Full token: {token[:50]}...")
     
     query = text("""
@@ -150,10 +149,23 @@ def upsert_link(session: Session, link_id: str, user_id: str, token: str):
             :institution_id, :institution_name, :institution_country,
             :mode, :active, :status, :refresh_status, :last_refreshed_at
         )
+        ON CONFLICT (user_id, id) DO UPDATE SET
+            holder_id = EXCLUDED.holder_id,
+            username = EXCLUDED.username,
+            holder_type = EXCLUDED.holder_type,
+            institution_id = EXCLUDED.institution_id,
+            institution_name = EXCLUDED.institution_name,
+            institution_country = EXCLUDED.institution_country,
+            mode = EXCLUDED.mode,
+            active = EXCLUDED.active,
+            status = EXCLUDED.status,
+            refresh_status = EXCLUDED.refresh_status,
+            last_refreshed_at = EXCLUDED.last_refreshed_at,
+            updated_at = NOW()
     """)
     
     session.execute(query, {
-        "id": link_id_from_api,  # Use the link ID from API response, not the full token
+        "id": token,  # Save the full token as ID
         "user_id": user_id,
         "holder_id": holder_id,
         "username": username,
