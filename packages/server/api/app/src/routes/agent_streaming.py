@@ -5,6 +5,7 @@ from claude_agent_sdk import ClaudeSDKClient, ClaudeAgentOptions
 from claude_agent_sdk.types import AssistantMessage, TextBlock, ToolUseBlock
 from typing import AsyncIterator
 import json
+import time
 
 from app.tools import lucas_tools, SYSTEM_PROMPT, ALLOWED_TOOLS
 
@@ -35,8 +36,16 @@ async def agent_stream(prompt: str, system_prompt: str | None, max_turns: int) -
             # Send the user's query
             await client.query(prompt)
 
+            # Track last activity time for keepalive pings
+            last_ping = time.time()
+
             # Stream responses from Claude
             async for message in client.receive_response():
+                # Send keepalive ping every 15 seconds to prevent connection timeout
+                if time.time() - last_ping > 15:
+                    yield ":\n\n"  # SSE comment (keepalive ping)
+                    last_ping = time.time()
+
                 if isinstance(message, AssistantMessage):
                     if message.content:
                         for block in message.content:
@@ -47,6 +56,7 @@ async def agent_stream(prompt: str, system_prompt: str | None, max_turns: int) -
                                     "content": block.text
                                 }
                                 yield f"data: {json.dumps(event_data)}\n\n"
+                                last_ping = time.time()  # Reset ping timer on activity
 
                             elif isinstance(block, ToolUseBlock):
                                 # Stream tool usage information with metadata
@@ -57,6 +67,7 @@ async def agent_stream(prompt: str, system_prompt: str | None, max_turns: int) -
                                     "id": block.id  # Include tool ID for tracking
                                 }
                                 yield f"data: {json.dumps(event_data)}\n\n"
+                                last_ping = time.time()  # Reset ping timer on activity
 
             # Send completion event
             yield f"data: {json.dumps({'type': 'done'})}\n\n"
