@@ -18,11 +18,23 @@ interface Movement {
     reference_id?: string;
 }
 
-interface MovementTableProps {
-    movements: Movement[];
+interface Account {
+    id: string;
+    name: string;
+    account_number: string;
+    currency: string;
 }
 
-export function MovementTable({ movements }: MovementTableProps) {
+interface MovementTableProps {
+    movements: Movement[];
+    accounts?: Account[];
+}
+
+export function MovementTable({ movements, accounts = [] }: MovementTableProps) {
+    const getAccountName = (accountId: string) => {
+        const account = accounts.find(acc => acc.id === accountId);
+        return account?.name || 'Unknown Bank';
+    };
     const formatCurrency = (amount: number, currency: string = 'CLP') => {
         return new Intl.NumberFormat('es-CL', {
             style: 'currency',
@@ -73,6 +85,7 @@ export function MovementTable({ movements }: MovementTableProps) {
                     <TableRow className="bg-muted/50">
                         <TableHead className="w-[50px]"></TableHead>
                         <TableHead className="font-semibold">Description</TableHead>
+                        <TableHead className="font-semibold">Bank Account</TableHead>
                         <TableHead className="font-semibold">Date</TableHead>
                         <TableHead className="font-semibold">Status</TableHead>
                         <TableHead className="text-right font-semibold">Amount</TableHead>
@@ -95,6 +108,12 @@ export function MovementTable({ movements }: MovementTableProps) {
                                             Ref: {movement.reference_id}
                                         </p>
                                     )}
+                                </div>
+                            </TableCell>
+                            <TableCell className="py-4">
+                                <div className="text-sm space-y-1">
+                                    <p className="font-medium">{getAccountName(movement.account_id)}</p>
+                                    <p className="text-xs text-muted-foreground">{movement.currency}</p>
                                 </div>
                             </TableCell>
                             <TableCell className="py-4">

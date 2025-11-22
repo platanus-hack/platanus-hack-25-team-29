@@ -317,18 +317,13 @@ def sync_fintoc_data(
         if not user_id:
             user_id = get_or_create_user(session)
         
-        # 2. Get link token from database
+        # 2. Get token from database
         # The token should have been saved by the token_gatherer webhook
-        query = text("""
-            SELECT id FROM fintoc_links 
-            WHERE user_id = :user_id AND active = true
-            ORDER BY created_at DESC
-            LIMIT 1
-        """)
-        result = session.execute(query, {"user_id": user_id})
-        link_record = result.fetchone()
+        query = text("SELECT token FROM token LIMIT 1")
+        result = session.execute(query)
+        token_record = result.fetchone()
         
-        if not link_record:
+        if not token_record:
             raise HTTPException(
                 status_code=400,
                 detail={
@@ -338,18 +333,21 @@ def sync_fintoc_data(
                 }
             )
         
-        # The link_id in the database IS the link_token from Fintoc
-        link_id = link_record[0]
-        token = link_id  # They are the same - token_gatherer stores the token as the link ID
+        # The token from the database
+        token = token_record[0]
         
-        print(f"Using Link ID from database: {link_id}")
+        print(f"Using token from database: {token[:30]}...")
         print(f"User ID: {user_id}")
         
         # 3. Fetch Accounts
         accounts = fetch_accounts(token)
         print(f"Fetched {len(accounts)} accounts")
         
-        # No need to upsert link - it already exists from token_gatherer
+        # Extract link_id from token (format: link_XXX_token_YYY)
+        link_id = token.split("_token_")[0] if "_token_" in token else token
+        
+        # Upsert the link to satisfy foreign key constraints
+        upsert_link(session, link_id, user_id)
         
         total_movements = 0
         
@@ -376,7 +374,7 @@ def sync_fintoc_data(
             "accounts_synced": len(accounts),
             "movements_synced": total_movements,
             "user_id": user_id,
-            "link_id": link_id
+            "token": token[:30] + "..."
         }
 
     except Exception as e:
