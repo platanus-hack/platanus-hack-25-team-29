@@ -92,19 +92,82 @@ def get_or_create_user(session: Session) -> str:
     result = session.execute(text("SELECT id FROM users WHERE email = :email"), {"email": email})
     return str(result.scalar())
 
-def upsert_link(session: Session, link_id: str, user_id: str):
-    # Basic upsert for link to satisfy FK
-    # We assume link_id is valid
-    # We need required fields: holder_id, institution_id
-    # We'll use placeholders since we might not have them from just accounts fetch
-    # Ideally we should fetch link details
+def fetch_link_details(link_id: str, token: str) -> Dict[str, Any]:
+    """
+    Fetch link details from Fintoc API to get institution and holder information
+    """
+    url = f"{BASE_URL}/links/{link_id}"
+    headers = get_fintoc_headers()
+    params = {"link_token": token}
+    
+    print(f"Fetching link details for link_id: {link_id}")
+    response = requests.get(url, headers=headers, params=params)
+    
+    if response.status_code == 200:
+        data = response.json()
+        print(f"Successfully fetched link details")
+        return data
+    else:
+        print(f"Warning: Could not fetch link details: {response.status_code} - {response.text}")
+        return {}
+
+def upsert_link(session: Session, link_id: str, user_id: str, token: str):
+    """
+    Upsert link with full details from Fintoc API
+    """
+    # Fetch link details from Fintoc API
+    link_details = fetch_link_details(link_id, token)
+    
+    # Extract information
+    holder_id = link_details.get("holder_id", "unknown")
+    holder_type = link_details.get("holder_type")
+    username = link_details.get("username")
+    
+    institution = link_details.get("institution", {})
+    institution_id = institution.get("id", "unknown")
+    institution_name = institution.get("name")
+    institution_country = institution.get("country")
+    
+    mode = link_details.get("mode")
+    status = link_details.get("status", "active")
+    
+    print(f"Upserting link with institution: {institution_name or 'Unknown'}")
     
     query = text("""
-        INSERT INTO fintoc_links (id, user_id, holder_id, institution_id, active, status)
-        VALUES (:id, :user_id, 'unknown_holder', 'unknown_institution', true, 'active')
-        ON CONFLICT (user_id, id) DO NOTHING
+        INSERT INTO fintoc_links (
+            id, user_id, holder_id, username, holder_type,
+            institution_id, institution_name, institution_country,
+            mode, active, status
+        )
+        VALUES (
+            :id, :user_id, :holder_id, :username, :holder_type,
+            :institution_id, :institution_name, :institution_country,
+            :mode, true, :status
+        )
+        ON CONFLICT (user_id, id) DO UPDATE SET
+            holder_id = EXCLUDED.holder_id,
+            username = EXCLUDED.username,
+            holder_type = EXCLUDED.holder_type,
+            institution_id = EXCLUDED.institution_id,
+            institution_name = EXCLUDED.institution_name,
+            institution_country = EXCLUDED.institution_country,
+            mode = EXCLUDED.mode,
+            status = EXCLUDED.status,
+            updated_at = NOW()
     """)
-    session.execute(query, {"id": link_id, "user_id": user_id})
+    
+    session.execute(query, {
+        "id": link_id,
+        "user_id": user_id,
+        "holder_id": holder_id,
+        "username": username,
+        "holder_type": holder_type,
+        "institution_id": institution_id,
+        "institution_name": institution_name,
+        "institution_country": institution_country,
+        "mode": mode,
+        "status": status
+    })
 
 def upsert_account(session: Session, account: Dict[str, Any], link_id: str, user_id: str):
     # Upsert account
@@ -366,8 +429,8 @@ def sync_fintoc_data(
         # Extract link_id from token (format: link_XXX_token_YYY)
         link_id = token.split("_token_")[0] if "_token_" in token else token
         
-        # Upsert the link to satisfy foreign key constraints
-        upsert_link(session, link_id, user_id)
+        # Upsert the link with full details from Fintoc API
+        upsert_link(session, link_id, user_id, token)
         
         total_movements = 0
         
