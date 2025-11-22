@@ -273,6 +273,10 @@ export function ChatView() {
     let currentToolUses: ToolUse[] = []
     let assistantMessageCreated = false
 
+    // Create AbortController for request timeout/cancellation
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), 600000) // 10 minute timeout
+
     try {
       const response = await fetch(`${API_BASE_URL}/api/agent`, {
         method: 'POST',
@@ -281,8 +285,14 @@ export function ChatView() {
           prompt: currentInput,
           systemPrompt: 'You are a helpful AI assistant.',
           maxTurns: 10
-        })
+        }),
+        signal: controller.signal
       })
+
+      // Check if response is OK before reading stream
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
 
       const reader = response.body?.getReader()
       const decoder = new TextDecoder()
@@ -366,8 +376,23 @@ export function ChatView() {
         }
       }
     } catch (e) {
-      dispatch(addMessage({ role: 'assistant', content: 'Connection error.' }))
+      // Handle different error types with specific messages
+      let errorMessage = 'Connection error. Please try again.'
+
+      if (e instanceof Error) {
+        if (e.name === 'AbortError') {
+          errorMessage = 'Request timed out after 10 minutes. Please try again with a simpler request.'
+        } else if (e.message.includes('HTTP error')) {
+          errorMessage = `Server error: ${e.message}. Please check your connection.`
+        } else if (e.message.includes('Failed to fetch')) {
+          errorMessage = 'Network error. Please check your internet connection.'
+        }
+      }
+
+      dispatch(addMessage({ role: 'assistant', content: errorMessage }))
+      console.error('Streaming error:', e)
     } finally {
+      clearTimeout(timeoutId)
       dispatch(setIsStreaming(false))
       setHasReceivedFirstToken(false)
     }
