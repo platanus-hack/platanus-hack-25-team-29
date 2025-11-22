@@ -26,15 +26,15 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   
-  const cookieStore = await cookies()
-  const defaultOpen = cookieStore.get("sidebar_state")?.value === "true"
+  // const cookieStore = await cookies()
+  // const defaultOpen = cookieStore.get("sidebar_state")?.value === "true"
 
   return (
     <html lang="en">
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <SidebarProvider defaultOpen={defaultOpen}>
+        <SidebarProvider defaultOpen={true}>
           <AppSidebar />
           <main className="flex-1 w-full">
             <SidebarTrigger />

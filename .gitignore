@@ -1,7 +1,6 @@
 node_modules/
 .DS_Store
-.yarn/
-.yarnrc.yml
+
 yarn.lock
 __pycache__
 *.json
