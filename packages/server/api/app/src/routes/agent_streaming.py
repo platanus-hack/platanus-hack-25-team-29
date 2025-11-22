@@ -1,23 +1,77 @@
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
-from claude_agent_sdk import query, ClaudeAgentOptions, AssistantMessage, TextBlock, ToolUseBlock, ToolResultBlock
+from claude_agent_sdk import ClaudeSDKClient, ClaudeAgentOptions
+from claude_agent_sdk.types import AssistantMessage, TextBlock, ToolUseBlock
 from typing import AsyncIterator
+import json
+
+from app.tools import lucas_tools, SYSTEM_PROMPT, ALLOWED_TOOLS
 
 router = APIRouter()
 
+
 class AgentRequest(BaseModel):
     prompt: str
-    system_prompt: str = "You are a helpful AI assistant."
+    system_prompt: str | None = None
     max_turns: int = 10
 
-async def agent_stream(prompt: str, system_prompt: str, max_turns: int) -> AsyncIterator[str]:
-    """Generator that yields SSE formatted messages from Claude Agent"""
-    # IMPORT HERE or integrate properly the agent.py functions and/or related/needed code    
 
-@router.get("/api/agent")
+async def agent_stream(prompt: str, system_prompt: str | None, max_turns: int) -> AsyncIterator[str]:
+    """Generator that yields SSE formatted messages from Claude Agent"""
+    try:
+        # Create agent options with shared tools
+        options = ClaudeAgentOptions(
+            model="claude-haiku-4-5",
+            mcp_servers={"Tools": lucas_tools},
+            permission_mode="bypassPermissions",
+            continue_conversation=True,
+            allowed_tools=ALLOWED_TOOLS,
+            system_prompt=system_prompt or SYSTEM_PROMPT,
+        )
+
+        # Use async context manager for proper connection handling
+        async with ClaudeSDKClient(options=options) as client:
+            # Send the user's query
+            await client.query(prompt)
+
+            # Stream responses from Claude
+            async for message in client.receive_response():
+                if isinstance(message, AssistantMessage):
+                    if message.content:
+                        for block in message.content:
+                            if isinstance(block, TextBlock):
+                                # Stream text content
+                                event_data = {
+                                    "type": "text",
+                                    "content": block.text
+                                }
+                                yield f"data: {json.dumps(event_data)}\n\n"
+
+                            elif isinstance(block, ToolUseBlock):
+                                # Stream tool usage information
+                                event_data = {
+                                    "type": "tool_use",
+                                    "name": block.name,
+                                    "input": block.input
+                                }
+                                yield f"data: {json.dumps(event_data)}\n\n"
+
+            # Send completion event
+            yield f"data: {json.dumps({'type': 'done'})}\n\n"
+
+    except Exception as e:
+        # Send error event
+        error_event = {
+            "type": "error",
+            "message": str(e)
+        }
+        yield f"data: {json.dumps(error_event)}\n\n"
+
+
+@router.post("/api/agent")
 async def agent_endpoint(request: AgentRequest):
-    """Main endpoint for streaming agent responses"""
+    """Main endpoint for streaming agent responses via SSE"""
     return StreamingResponse(
         agent_stream(request.prompt, request.system_prompt, request.max_turns),
         media_type="text/event-stream",
