@@ -1,9 +1,14 @@
 import { Sidebar, SidebarContent, SidebarFooter, SidebarGroup, SidebarGroupLabel, SidebarHeader, SidebarGroupContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton } from "@/components/ui/sidebar"
-import { BarChart3, MessageCircle } from "lucide-react"
+import { BarChart3, MessageCircle, Wallet } from "lucide-react"
 import Link from "next/link"
 
 
 const items = [
+  {
+    title: "Connect Bank Account",
+    url: "/connect-bank",
+    icon: Wallet,
+  },
   {
     title: "Chat",
     url: "/chat",
