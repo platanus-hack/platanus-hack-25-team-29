@@ -312,3 +312,4 @@ def sync_fintoc_data(
         print(f"Error syncing fintoc data: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
+
