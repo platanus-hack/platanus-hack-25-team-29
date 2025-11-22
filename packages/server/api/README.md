@@ -17,7 +17,7 @@ gcloud run deploy platanus-grupo29 \
     --memory 2Gi \
     --min-instances 1 \
     --max-instances 10 \
-    --set-env-vars="DATABASE_URL=your_database_url,FINTOC_SECRET_KEY=your_fintoc_secret_key,FINTOC_PUBLIC_KEY=your_fintoc_public_key,LINK_TOKEN=your_link_token,NGROK_AUTHTOKEN=your_ngrok_auth_token"
+    --set-env-vars="DATABASE_URL=your_database_url,FINTOC_SECRET_KEY=your_fintoc_secret_key,FINTOC_PUBLIC_KEY=your_fintoc_public_key,LINK_TOKEN=your_link_token"
 ```
 
 **Deployment flags explained:**
@@ -25,3 +25,12 @@ gcloud run deploy platanus-grupo29 \
 - `--cpu 2 --memory 2Gi`: Better performance for Claude API calls
 - `--min-instances 1`: Keep at least one instance warm (avoids cold starts)
 - `--max-instances 10`: Allow scaling up to 10 concurrent instances
+
+**Note:** ngrok has been removed from the production container as Cloud Run already provides a public URL. If you need ngrok for local development, run it separately:
+```bash
+# Terminal 1: Run the API server
+uv run uvicorn app.main:app --reload
+
+# Terminal 2 (optional): Run ngrok for tunneling
+ngrok http 8000
+```
