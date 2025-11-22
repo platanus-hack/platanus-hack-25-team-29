@@ -3,6 +3,7 @@
 import { Bar, BarChart, XAxis, YAxis } from "recharts"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
+import { Movement } from "@/lib/types"
 
 const chartData = [
   { category: "Alimentacion", amount: 275000, fill: "var(--color-Alimentacion)" },
@@ -38,7 +39,7 @@ const chartConfig = {
   },
 } satisfies ChartConfig
 
-export function ByCategory() {
+export function ByCategory({ movements }: { movements: Movement[] }) {
   return (
     <Card>
       <CardHeader>
