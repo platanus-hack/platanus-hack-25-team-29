@@ -3,12 +3,13 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { AlertCircle, RefreshCw } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { AlertCircle, RefreshCw, Wallet, ArrowLeftRight } from 'lucide-react';
+import { Empty, EmptyHeader, EmptyMedia, EmptyTitle, EmptyDescription, EmptyContent } from '@/components/ui/empty';
 import { MovementTable } from '@/components/movements/movement-table';
 import { SummaryStats } from '@/components/movements/summary-stats';
 import { SyncStatus } from '@/components/movements/sync-status';
 import { AccountFilter } from '@/components/movements/account-filter';
-import { SyncButton } from '@/components/movements/sync-button';
 
 const API_BASE_URL = 'https://platanus-grupo29-681510028004.us-central1.run.app';
 
@@ -158,16 +159,31 @@ export default function MovementsPage() {
     return (
         <div className="container mx-auto p-6 space-y-6">
             {/* Header */}
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                <div>
-                    <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
-                        Movements
-                    </h1>
-                    <p className="text-muted-foreground mt-2 text-lg">
-                        View and manage your bank account transactions
-                    </p>
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b pb-6">
+                <div className="flex items-center gap-3">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-lg border bg-muted/50">
+                        <ArrowLeftRight className="h-6 w-6 text-primary" />
+                    </div>
+                    <div>
+                        <h1 className="text-3xl font-bold tracking-tight">
+                            Movements
+                        </h1>
+                        <p className="text-sm text-muted-foreground mt-1">
+                            View and manage your bank account transactions
+                        </p>
+                    </div>
                 </div>
-                <SyncButton onSync={handleSync} isSyncing={isSyncing} />
+                <div className="flex flex-wrap items-center gap-2">
+                    <Button
+                        variant="outline"
+                        onClick={handleSync}
+                        disabled={isSyncing}
+                        className="gap-2"
+                    >
+                        <RefreshCw className={`h-4 w-4 ${isSyncing ? 'animate-spin' : ''}`} />
+                        {isSyncing ? 'Syncing...' : 'Sync Data'}
+                    </Button>
+                </div>
             </div>
 
             {/* Sync Status */}
@@ -196,14 +212,28 @@ export default function MovementsPage() {
                             ))}
                         </div>
                     ) : filteredMovements.length === 0 ? (
-                        <div className="text-center py-16">
-                            <AlertCircle className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
-                            <h3 className="text-xl font-semibold mb-2">No movements found</h3>
-                            <p className="text-muted-foreground mb-6 max-w-md mx-auto">
-                                Click "Sync Data" to fetch your bank transactions from Fintoc
-                            </p>
-                            <SyncButton onSync={handleSync} isSyncing={isSyncing} />
-                        </div>
+                        <Empty>
+                            <EmptyHeader>
+                                <EmptyMedia variant="icon">
+                                    <Wallet className="h-16 w-16" />
+                                </EmptyMedia>
+                                <EmptyTitle>No movements found</EmptyTitle>
+                                <EmptyDescription>
+                                    Click "Sync Data" to fetch your bank transactions from Fintoc and start tracking your finances
+                                </EmptyDescription>
+                            </EmptyHeader>
+                            <EmptyContent>
+                                <Button
+                                    variant="outline"
+                                    onClick={handleSync}
+                                    disabled={isSyncing}
+                                    className="gap-2"
+                                >
+                                    <RefreshCw className={`h-4 w-4 ${isSyncing ? 'animate-spin' : ''}`} />
+                                    {isSyncing ? 'Syncing...' : 'Sync Data'}
+                                </Button>
+                            </EmptyContent>
+                        </Empty>
                     ) : (
                         <MovementTable movements={filteredMovements} />
                     )}
