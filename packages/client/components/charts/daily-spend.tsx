@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
 import { Movement } from "@/lib/types"
 import { getDaysInMonth, startOfMonth, isSameMonth } from "date-fns"
+import { getMonthlyFixedExpenses } from "@/lib/filterFixes"
 
 const chartConfig = {
   daily: {
@@ -26,12 +27,19 @@ function getCurrentMonthChartData(movements: Movement[]) {
   const currentDay = today.getDate()
   const daysInMonth = getDaysInMonth(today)
   const startMonth = startOfMonth(today)
+  let budget = 500000
 
+  if (typeof window !== "undefined") {
+      const stored = localStorage.getItem("budget");
+      budget = stored ? Number(stored) : 500000;
+    }
   // Inicializar arrays para gastos diarios
   const dailySpend: Record<number, number> = {}
 
+  const fixedExpenses = getMonthlyFixedExpenses({movements, getFixes: false})
+
   // Solo tomar gastos del mes actual y monto negativo
-  for (const mov of movements || []) {
+  for (const mov of fixedExpenses || []) {
     if (!mov.post_date) continue
     const dateObj = new Date(mov.post_date)
     if (isNaN(dateObj.getTime())) continue
@@ -45,8 +53,7 @@ function getCurrentMonthChartData(movements: Movement[]) {
   }
 
   // Calcular el valor diario teórico para llegar a 1 millón al final del mes
-  const ONE_MILLION = 4000000
-  const dailyTarget = Math.round(ONE_MILLION / daysInMonth)
+  const dailyTarget = Math.round(Number(budget) / daysInMonth)
 
   // Crear datos para el gráfico
   const chartData: {

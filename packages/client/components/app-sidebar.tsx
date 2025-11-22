@@ -1,5 +1,5 @@
 import { Sidebar, SidebarContent, SidebarFooter, SidebarGroup, SidebarGroupLabel, SidebarHeader, SidebarGroupContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton } from "@/components/ui/sidebar"
-import { BarChart3, MessageCircle, Wallet, ArrowLeftRight } from "lucide-react"
+import { BarChart3, MessageCircle, Wallet, ArrowLeftRight, Cog } from "lucide-react"
 import Link from "next/link"
 
 
@@ -23,6 +23,11 @@ const items = [
     title: "Movements",
     url: "/movements",
     icon: ArrowLeftRight,
+  },
+  {
+    title: "Settings",
+    url: "/settings",
+    icon: Cog,
   }
 ]
 
