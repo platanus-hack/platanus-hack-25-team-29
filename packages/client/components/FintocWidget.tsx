@@ -205,16 +205,16 @@ const FintocWidget: React.FC<FintocWidgetProps> = ({
 
                     // Extract link token from the response
                     const linkToken = link?.link_token || link?.token;
-                    
+
                     if (linkToken) {
                         try {
                             console.log('📤 Sending link token to backend...');
-                            
+
                             // Send link token to backend
                             const saveUrl = userId
                                 ? `${apiBaseUrl}/save-link?user_id=${userId}`
                                 : `${apiBaseUrl}/save-link`;
-                            
+
                             const response = await fetch(saveUrl, {
                                 method: 'POST',
                                 headers: {
@@ -233,7 +233,7 @@ const FintocWidget: React.FC<FintocWidgetProps> = ({
 
                             console.log('✅ Link token saved successfully');
                             alert('Success! Bank connected. You can now sync your data.');
-                            
+
                             // Call parent success callback
                             if (onSuccess) {
                                 onSuccess();
@@ -241,7 +241,7 @@ const FintocWidget: React.FC<FintocWidgetProps> = ({
                         } catch (error: any) {
                             console.error('❌ Error saving link token:', error);
                             setError('Bank connected but failed to save. Please try syncing manually or contact support.');
-                            
+
                             if (onError) {
                                 onError(error.message);
                             }
@@ -314,7 +314,7 @@ const FintocWidget: React.FC<FintocWidgetProps> = ({
 
     return (
         <div className="fintoc-widget-container space-y-4">
-            <div className="flex flex-wrap items-center gap-2 md:flex-row">
+            <div className="flex flex-wrap items-center justify-center gap-2">
                 <Button
                     variant="outline"
                     onClick={handleConnectBankAccount}

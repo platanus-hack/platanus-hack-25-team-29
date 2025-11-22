@@ -79,16 +79,16 @@ export function MovementTable({ movements, accounts = [] }: MovementTableProps) 
     };
 
     return (
-        <div className="overflow-x-auto rounded-lg border">
-            <Table>
+        <div className="w-full overflow-x-auto rounded-lg border">
+            <Table className="min-w-full">
                 <TableHeader>
                     <TableRow className="bg-muted/50">
-                        <TableHead className="w-[50px]"></TableHead>
-                        <TableHead className="font-semibold">Description</TableHead>
-                        <TableHead className="font-semibold">Bank Account</TableHead>
-                        <TableHead className="font-semibold">Date</TableHead>
-                        <TableHead className="font-semibold">Status</TableHead>
-                        <TableHead className="text-right font-semibold">Amount</TableHead>
+                        <TableHead className="w-[40px]"></TableHead>
+                        <TableHead className="font-semibold min-w-[200px] max-w-[300px]">Description</TableHead>
+                        <TableHead className="font-semibold min-w-[120px] max-w-[180px]">Bank</TableHead>
+                        <TableHead className="font-semibold w-[110px]">Date</TableHead>
+                        <TableHead className="font-semibold w-[100px] hidden md:table-cell">Status</TableHead>
+                        <TableHead className="text-right font-semibold min-w-[120px]">Amount</TableHead>
                     </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -97,43 +97,44 @@ export function MovementTable({ movements, accounts = [] }: MovementTableProps) 
                             <TableCell className="py-4">
                                 {getMovementIcon(movement.amount)}
                             </TableCell>
-                            <TableCell className="py-4">
+                            <TableCell className="py-4 max-w-[300px]">
                                 <div className="space-y-1">
-                                    <p className="font-medium text-sm">{movement.description}</p>
+                                    <p className="font-medium text-sm truncate" title={movement.description}>
+                                        {movement.description}
+                                    </p>
                                     {movement.comment && (
-                                        <p className="text-xs text-muted-foreground">{movement.comment}</p>
+                                        <p className="text-xs text-muted-foreground truncate" title={movement.comment}>
+                                            {movement.comment}
+                                        </p>
                                     )}
                                     {movement.reference_id && (
-                                        <p className="text-xs text-muted-foreground font-mono">
+                                        <p className="text-xs text-muted-foreground font-mono truncate" title={movement.reference_id}>
                                             Ref: {movement.reference_id}
                                         </p>
                                     )}
                                 </div>
                             </TableCell>
-                            <TableCell className="py-4">
-                                <div className="text-sm space-y-1">
-                                    <p className="font-medium">{getAccountName(movement.account_id)}</p>
-                                    <p className="text-xs text-muted-foreground">{movement.currency}</p>
-                                </div>
+                            <TableCell className="py-4 max-w-[180px]">
+                                <p className="font-medium text-sm truncate" title={getAccountName(movement.account_id)}>
+                                    {getAccountName(movement.account_id)}
+                                </p>
                             </TableCell>
                             <TableCell className="py-4">
-                                <div className="text-sm space-y-1">
-                                    <p className="font-medium">{formatDate(movement.post_date)}</p>
-                                    {movement.transaction_date && movement.transaction_date !== movement.post_date && (
-                                        <p className="text-xs text-muted-foreground">
-                                            Txn: {formatDate(movement.transaction_date)}
-                                        </p>
-                                    )}
-                                </div>
+                                <p className="font-medium text-sm whitespace-nowrap">{formatDate(movement.post_date)}</p>
                             </TableCell>
-                            <TableCell className="py-4">
+                            <TableCell className="py-4 hidden md:table-cell">
                                 {getStatusBadge(movement.status, movement.pending)}
                             </TableCell>
                             <TableCell className="text-right py-4">
-                                <span className={`font-semibold text-sm ${movement.amount > 0 ? 'text-green-600' : 'text-red-600'}`}>
-                                    {movement.amount > 0 ? '+' : ''}
-                                    {formatCurrency(movement.amount, movement.currency)}
-                                </span>
+                                <div className="flex flex-col items-end gap-1">
+                                    <span className={`font-semibold text-sm whitespace-nowrap ${movement.amount > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                        {movement.amount > 0 ? '+' : ''}
+                                        {formatCurrency(movement.amount, movement.currency)}
+                                    </span>
+                                    <div className="md:hidden">
+                                        {getStatusBadge(movement.status, movement.pending)}
+                                    </div>
+                                </div>
                             </TableCell>
                         </TableRow>
                     ))}

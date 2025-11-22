@@ -64,7 +64,7 @@ export default function MovementsPage() {
     const [syncResult, setSyncResult] = useState<SyncResponse | null>(null);
     const [selectedAccount, setSelectedAccount] = useState<string>('all');
     const [currentPage, setCurrentPage] = useState(1);
-    const itemsPerPage = 10;
+    const itemsPerPage = 20;
 
     // Sync data from Fintoc
     const handleSync = async () => {
@@ -181,7 +181,7 @@ export default function MovementsPage() {
     const generatePageNumbers = () => {
         const pages = [];
         const maxVisiblePages = 5;
-        
+
         if (totalPages <= maxVisiblePages) {
             for (let i = 1; i <= totalPages; i++) {
                 pages.push(i);
@@ -209,7 +209,7 @@ export default function MovementsPage() {
                 pages.push(totalPages);
             }
         }
-        
+
         return pages;
     };
 
@@ -297,54 +297,61 @@ export default function MovementsPage() {
                     ) : (
                         <div className="space-y-4">
                             <MovementTable movements={paginatedMovements} accounts={accounts} />
-                            
+
                             {/* Pagination */}
                             {totalPages > 1 && (
-                                <Pagination className="mt-6">
-                                    <PaginationContent>
-                                        <PaginationItem>
-                                            <PaginationPrevious 
-                                                href="#"
-                                                onClick={(e) => {
-                                                    e.preventDefault();
-                                                    if (currentPage > 1) setCurrentPage(currentPage - 1);
-                                                }}
-                                                className={currentPage === 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
-                                            />
-                                        </PaginationItem>
-                                        
-                                        {generatePageNumbers().map((page, index) => (
-                                            <PaginationItem key={index}>
-                                                {page === 'ellipsis' ? (
-                                                    <PaginationEllipsis />
-                                                ) : (
-                                                    <PaginationLink
-                                                        href="#"
-                                                        onClick={(e) => {
-                                                            e.preventDefault();
-                                                            setCurrentPage(page as number);
-                                                        }}
-                                                        isActive={currentPage === page}
-                                                        className="cursor-pointer"
-                                                    >
-                                                        {page}
-                                                    </PaginationLink>
-                                                )}
+                                <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-6">
+                                    <p className="text-sm text-muted-foreground">
+                                        Page {currentPage} of {totalPages}
+                                    </p>
+                                    <Pagination>
+                                        <PaginationContent className="flex-wrap justify-center">
+                                            <PaginationItem>
+                                                <PaginationPrevious
+                                                    href="#"
+                                                    onClick={(e) => {
+                                                        e.preventDefault();
+                                                        if (currentPage > 1) setCurrentPage(currentPage - 1);
+                                                    }}
+                                                    className={currentPage === 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                                                />
                                             </PaginationItem>
-                                        ))}
-                                        
-                                        <PaginationItem>
-                                            <PaginationNext 
-                                                href="#"
-                                                onClick={(e) => {
-                                                    e.preventDefault();
-                                                    if (currentPage < totalPages) setCurrentPage(currentPage + 1);
-                                                }}
-                                                className={currentPage === totalPages ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
-                                            />
-                                        </PaginationItem>
-                                    </PaginationContent>
-                                </Pagination>
+
+                                            <div className="hidden sm:contents">
+                                                {generatePageNumbers().map((page, index) => (
+                                                    <PaginationItem key={index}>
+                                                        {page === 'ellipsis' ? (
+                                                            <PaginationEllipsis />
+                                                        ) : (
+                                                            <PaginationLink
+                                                                href="#"
+                                                                onClick={(e) => {
+                                                                    e.preventDefault();
+                                                                    setCurrentPage(page as number);
+                                                                }}
+                                                                isActive={currentPage === page}
+                                                                className="cursor-pointer"
+                                                            >
+                                                                {page}
+                                                            </PaginationLink>
+                                                        )}
+                                                    </PaginationItem>
+                                                ))}
+                                            </div>
+
+                                            <PaginationItem>
+                                                <PaginationNext
+                                                    href="#"
+                                                    onClick={(e) => {
+                                                        e.preventDefault();
+                                                        if (currentPage < totalPages) setCurrentPage(currentPage + 1);
+                                                    }}
+                                                    className={currentPage === totalPages ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                                                />
+                                            </PaginationItem>
+                                        </PaginationContent>
+                                    </Pagination>
+                                </div>
                             )}
                         </div>
                     )}
