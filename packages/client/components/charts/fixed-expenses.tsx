@@ -8,11 +8,11 @@ import { ScrollArea } from "../ui/scroll-area"
 
 
 export function FixedExpenses({ movements }: { movements: Movement[] }) {
-  const fixedExpenses = getMonthlyFixedExpenses(movements)
+  const fixedExpenses = getMonthlyFixedExpenses({movements, getFixes: true})
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Fixed Expenses</CardTitle>
+        <CardTitle>Costos Fijos</CardTitle>
       </CardHeader>
       <CardContent>
         <ScrollArea className="h-60">
@@ -32,7 +32,7 @@ export function FixedExpenses({ movements }: { movements: Movement[] }) {
               ))}
               <TableRow>
                 <TableCell className="font-bold">Total</TableCell>
-                <TableCell className="font-bold text-right pr-4">${fixedExpenses.reduce((acc, expense) => acc + expense.amount, 0).toLocaleString()}</TableCell>
+                <TableCell className="font-bold text-right pr-4">$ {fixedExpenses.reduce((acc, expense) => acc - expense.amount, 0).toLocaleString()}</TableCell>
               </TableRow>
             </TableBody>
           </Table>
