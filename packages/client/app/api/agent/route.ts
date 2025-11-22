@@ -3,7 +3,7 @@ import { NextRequest } from "next/server";
 export const runtime = 'edge'; // Use edge runtime for better streaming
 export const maxDuration = 60;
 
-const PYTHON_BACKEND_URL = 'http://localhost:8000';
+const PYTHON_BACKEND_URL = process.env.NEXT_PUBLIC_API_URL;
 
 export async function POST(req: NextRequest) {
   const { prompt, systemPrompt, maxTurns } = await req.json();
