@@ -24,11 +24,18 @@ RUN uv sync --frozen
 ENV PORT=8080
 EXPOSE 8080
 
+# Create startup script that runs ngrok in background and uvicorn in foreground
 RUN echo '#!/bin/bash\n\
-uv run uvicorn app.main:app --host 0.0.0.0 --port $PORT &\n\
-sleep 3\n\
-ngrok http $PORT --log stdout\n\
+# Start ngrok in the background if NGROK_AUTHTOKEN is set\n\
+if [ ! -z "$NGROK_AUTHTOKEN" ]; then\n\
+  ngrok config add-authtoken $NGROK_AUTHTOKEN\n\
+  ngrok http $PORT --log=stdout > /tmp/ngrok.log 2>&1 &\n\
+  echo "ngrok started in background"\n\
+fi\n\
+\n\
+# Start uvicorn in the foreground (main process)\n\
+exec uv run uvicorn app.main:app --host 0.0.0.0 --port $PORT\n\
 ' > /app/start.sh && chmod +x /app/start.sh
 
-# Run both services
+# Run the startup script
 CMD ["/app/start.sh"]
