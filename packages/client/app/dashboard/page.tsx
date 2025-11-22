@@ -1,3 +1,5 @@
+
+
 import { SpendInTime } from "@/components/charts/spend-in-time"
 import { DailySpend } from "@/components/charts/daily-spend"
 import { ByCategory } from "@/components/charts/by-category"
@@ -10,7 +12,8 @@ export default async function DashboardPage() {
   const today = new Date()
   const oneYearAgo = format(new Date(today.getFullYear(), today.getMonth() - 6, today.getDate()), "yyyy-MM-dd")
   const todayFormatted = format(new Date(), "yyyy-MM-dd")
-  const movements = await fetch(process.env.NEXT_PUBLIC_API_URL + "/movements?start_date=" + oneYearAgo + "&end_date=" + todayFormatted, {
+  const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://placeholder:8000'
+  const movements = await fetch(`${API_BASE_URL}/movements?start_date=${oneYearAgo}&end_date=${todayFormatted}`, {
     method: "GET",
     headers: {
       "Content-Type": "application/json",
