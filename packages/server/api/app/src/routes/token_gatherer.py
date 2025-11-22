@@ -48,6 +48,31 @@ def get_webhook_url() -> str:
     return f"{webhook_base}/api/fintoc/webhook/link-token"
 
 
+def exchange_link_token(link_token: str) -> Dict[str, Any]:
+    """
+    Exchange temporary link token for permanent link credentials.
+    Returns link_id and access_token from Fintoc.
+    """
+    if not FINTOC_SECRET_KEY:
+        raise Exception("FINTOC_SECRET_KEY not configured")
+    
+    url = "https://api.fintoc.com/v1/link_intents"
+    headers = {"Authorization": FINTOC_SECRET_KEY}
+    data = {"link_token": link_token}
+    
+    print(f"🔄 Exchanging link token with Fintoc...")
+    response = requests.post(url, headers=headers, json=data)
+    
+    if response.status_code in [200, 201]:
+        result = response.json()
+        print(f"✅ Successfully exchanged link token")
+        return result
+    else:
+        error_msg = f"Failed to exchange link token: {response.status_code} - {response.text}"
+        print(f"❌ {error_msg}")
+        raise Exception(error_msg)
+
+
 @router.get("/widget-config")
 async def get_widget_config(
     user_id: Optional[str] = Query(None),
@@ -155,6 +180,23 @@ async def handle_link_token_webhook(
         
         print(f"✅ Processing webhook for user {user_id}, link_token: {link_token[:20]}...")
         
+        # Exchange the temporary link token for permanent credentials
+        try:
+            link_credentials = exchange_link_token(link_token)
+            link_id = link_credentials.get("link_id")
+            access_token = link_credentials.get("access_token")
+            
+            if not link_id or not access_token:
+                raise Exception("Missing link_id or access_token in exchange response")
+            
+            # Create the full link token in Fintoc API format
+            full_link_token = f"{link_id}_token_{access_token}"
+            print(f"✅ Got link credentials - link_id: {link_id}")
+            
+        except Exception as e:
+            print(f"❌ Error exchanging link token: {e}")
+            raise HTTPException(status_code=500, detail=f"Failed to exchange link token: {str(e)}")
+        
         # Extract additional data from webhook
         institution = None
         institution_id = None
@@ -168,7 +210,7 @@ async def handle_link_token_webhook(
             holder_name = webhook_data.get("holder_name")
             holder_id = webhook_data.get("holder_id")
         
-        # Store the link token
+        # Store the full link token
         # Check if link already exists
         check_query = text("""
             SELECT id FROM fintoc_links 
@@ -176,7 +218,7 @@ async def handle_link_token_webhook(
         """)
         existing = session.execute(
             check_query, 
-            {"user_id": user_id, "link_token": link_token}
+            {"user_id": user_id, "link_token": full_link_token}
         ).fetchone()
         
         if not existing:
@@ -193,14 +235,14 @@ async def handle_link_token_webhook(
             """)
             
             session.execute(insert_query, {
-                "id": link_token,
+                "id": full_link_token,
                 "user_id": user_id,
                 "holder_id": holder_id or "unknown",
                 "institution_id": institution_id or "unknown"
             })
             session.commit()
             
-            print(f"💾 Link token saved for user {user_id}")
+            print(f"💾 Full link token saved for user {user_id}")
             print(f"   Institution: {institution or 'Unknown'}")
             print(f"   Holder: {holder_name or 'Unknown'}")
         else:
@@ -210,7 +252,7 @@ async def handle_link_token_webhook(
             content={
                 "status": "success",
                 "message": "Link token received and stored",
-                "link_token_id": link_token,
+                "link_id": link_id,
                 "user_id": user_id
             }
         )

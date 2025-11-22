@@ -225,6 +225,81 @@ def upsert_movement(session: Session, movement: Dict[str, Any], account_id: str,
     session.execute(query, params)
 
 
+@router.get("/accounts")
+def get_accounts(
+    user_id: Optional[str] = Query(None),
+    session: Session = Depends(get_session)
+):
+    """
+    Get all accounts for a user from the database.
+    """
+    try:
+        if not user_id:
+            user_id = get_or_create_user(session)
+        
+        query = text("""
+            SELECT * FROM fintoc_accounts
+            WHERE user_id = :user_id
+            ORDER BY created_at DESC
+        """)
+        
+        result = session.execute(query, {"user_id": user_id})
+        columns = result.keys()
+        accounts = [dict(zip(columns, row)) for row in result.fetchall()]
+        
+        return {
+            "success": True,
+            "count": len(accounts),
+            "accounts": accounts
+        }
+    
+    except Exception as e:
+        print(f"Error fetching accounts: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/movements")
+def get_movements(
+    user_id: Optional[str] = Query(None),
+    account_id: Optional[str] = Query(None),
+    session: Session = Depends(get_session)
+):
+    """
+    Get movements for a user, optionally filtered by account.
+    """
+    try:
+        if not user_id:
+            user_id = get_or_create_user(session)
+        
+        if account_id:
+            query = text("""
+                SELECT * FROM movements
+                WHERE user_id = :user_id AND account_id = :account_id
+                ORDER BY post_date DESC
+            """)
+            result = session.execute(query, {"user_id": user_id, "account_id": account_id})
+        else:
+            query = text("""
+                SELECT * FROM movements
+                WHERE user_id = :user_id
+                ORDER BY post_date DESC
+            """)
+            result = session.execute(query, {"user_id": user_id})
+        
+        columns = result.keys()
+        movements = [dict(zip(columns, row)) for row in result.fetchall()]
+        
+        return {
+            "success": True,
+            "count": len(movements),
+            "movements": movements
+        }
+    
+    except Exception as e:
+        print(f"Error fetching movements: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @router.post("/sync")
 def sync_fintoc_data(
     user_id: Optional[str] = Query(None),
