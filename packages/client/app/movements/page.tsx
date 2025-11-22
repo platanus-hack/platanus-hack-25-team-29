@@ -156,11 +156,11 @@ export default function MovementsPage() {
         }
     };
 
-    // Don't fetch on initial load - only fetch after sync
-    // useEffect(() => {
-    //     fetchMovements();
-    //     fetchAccounts();
-    // }, []);
+    // Fetch on initial load
+    useEffect(() => {
+        fetchMovements();
+        fetchAccounts();
+    }, []);
 
     // Filter movements by selected account
     const filteredMovements = selectedAccount === 'all'
@@ -238,7 +238,7 @@ export default function MovementsPage() {
                         className="gap-2"
                     >
                         <RefreshCw className={`h-4 w-4 ${isSyncing ? 'animate-spin' : ''}`} />
-                        {isSyncing ? 'Syncing...' : 'Sync Data'}
+                        {isSyncing ? 'Refreshing...' : 'Refresh'}
                     </Button>
                 </div>
             </div>
@@ -279,7 +279,7 @@ export default function MovementsPage() {
                                 </EmptyMedia>
                                 <EmptyTitle>No movements found</EmptyTitle>
                                 <EmptyDescription>
-                                    Click "Sync Data" to fetch your bank transactions from Fintoc and start tracking your finances
+                                    No transactions found. Click "Refresh" to update your transactions from your bank account.
                                 </EmptyDescription>
                             </EmptyHeader>
                             <EmptyContent>
@@ -290,7 +290,7 @@ export default function MovementsPage() {
                                     className="gap-2"
                                 >
                                     <RefreshCw className={`h-4 w-4 ${isSyncing ? 'animate-spin' : ''}`} />
-                                    {isSyncing ? 'Syncing...' : 'Sync Data'}
+                                    {isSyncing ? 'Refreshing...' : 'Refresh'}
                                 </Button>
                             </EmptyContent>
                         </Empty>
