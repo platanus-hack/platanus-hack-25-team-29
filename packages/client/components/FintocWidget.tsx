@@ -207,7 +207,7 @@ const FintocWidget: React.FC<FintocWidgetProps> = ({
                     }
                     
                     // Show success message
-                    alert('¡Cuenta bancaria conectada exitosamente! Los datos se están sincronizando.');
+                    alert('Success! Syncing data...');
                 },
                 onExit: () => {
                     console.log('👋 Widget exited');
@@ -286,7 +286,7 @@ const FintocWidget: React.FC<FintocWidgetProps> = ({
                     transition: 'all 0.2s'
                 }}
             >
-                {isLoading ? '⏳ Cargando...' : '🏦 Conectar Cuenta Bancaria'}
+                {isLoading ? '⏳ Loading...' : '🏦 Connect Bank Account'}
             </button>
             
             {error && (

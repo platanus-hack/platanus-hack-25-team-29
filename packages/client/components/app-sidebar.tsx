@@ -6,7 +6,7 @@ import Link from "next/link"
 const items = [
   {
     title: "Connect Bank Account",
-    url: "/connect-bank",
+    url: "/connect",
     icon: Wallet,
   },
   {
