@@ -68,8 +68,10 @@ export function ChatView() {
     dispatch(setIsStreaming(true))
     dispatch(clearToolActivity())
 
+    // Local state tracking for streaming (don't rely on Redux state during streaming)
     let currentAssistantMessage = ''
     let currentToolUses: ToolUse[] = []
+    let assistantMessageCreated = false // Track if we've created the assistant message
 
     try {
       const response = await fetch("http://localhost:8000/api/agent", {
@@ -98,22 +100,22 @@ export function ChatView() {
               const parsed = JSON.parse(data)
               if (parsed.type === "text") {
                 currentAssistantMessage += parsed.content
-                // Update the last message or create new one
-                const lastMsg = messages[messages.length - 1]
 
-                if (lastMsg?.role === 'assistant') {
-                  // Update existing assistant message
+                // Use local tracking instead of checking Redux state
+                if (assistantMessageCreated) {
+                  // Update existing assistant message (pass a copy of the array)
                   dispatch(updateLastMessage({
                     content: currentAssistantMessage,
-                    toolUses: currentToolUses,
+                    toolUses: [...currentToolUses], // Copy array to avoid freezing issues
                   }))
                 } else {
-                  // Create new assistant message
+                  // Create new assistant message (first time only)
                   dispatch(addMessage({
                     role: 'assistant',
                     content: currentAssistantMessage,
-                    toolUses: currentToolUses,
+                    toolUses: [...currentToolUses], // Copy array to avoid freezing issues
                   }))
+                  assistantMessageCreated = true
                 }
               } else if (parsed.type === "tool_use") {
                 const toolUse: ToolUse = {
@@ -122,6 +124,15 @@ export function ChatView() {
                   id: parsed.id || `tool-${Date.now()}`,
                 };
                 currentToolUses.push(toolUse);
+
+                // Update the message with the new tool use
+                if (assistantMessageCreated) {
+                  dispatch(updateLastMessage({
+                    content: currentAssistantMessage,
+                    toolUses: [...currentToolUses], // Copy array
+                  }))
+                }
+
                 dispatch(setToolActivity(`🔧 Using tool: ${parsed.name}`))
               } else if (parsed.type === "tool_result") {
                 dispatch(setToolActivity('✅ Tool completed'))
