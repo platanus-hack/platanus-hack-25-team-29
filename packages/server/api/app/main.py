@@ -5,6 +5,7 @@ from dotenv import load_dotenv
 # Load environment variables
 load_dotenv()
 
+from .src.routes.supabase_connection import router as supabase_connection_router
 from .src.routes.fintoc import router as fintoc_router
 from .src.routes.token_gatherer import router as token_gatherer_router
 from .src.routes.agent_streaming import router as agent_streaming_router
@@ -22,6 +23,7 @@ app.add_middleware(
 )
 
 # Include database routes
+app.include_router(supabase_connection_router, prefix="/supabase_connection", tags=["supabase_connection"])
 app.include_router(fintoc_router, prefix="/fintoc", tags=["fintoc"])
 app.include_router(token_gatherer_router, prefix="/api/fintoc", tags=["token_gatherer"])
 app.include_router(agent_streaming_router, tags=["agent"])
