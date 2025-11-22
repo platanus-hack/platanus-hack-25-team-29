@@ -16,4 +16,4 @@ ENV PORT=8080
 EXPOSE 8080
 
 # Run the app
-CMD uv run uvicorn main:app --host 0.0.0.0 --port $PORT
+CMD uv run uvicorn app.main:app --host 0.0.0.0 --port $PORT
