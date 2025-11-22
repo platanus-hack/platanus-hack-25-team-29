@@ -218,43 +218,16 @@ async def handle_link_token_webhook(
             holder_name = webhook_data.get("holder_name")
             holder_id = webhook_data.get("holder_id")
         
-        # Store the full link token
-        # Check if link already exists
-        check_query = text("""
-            SELECT id FROM fintoc_links 
-            WHERE user_id = :user_id AND id = :link_token
-        """)
-        existing = session.execute(
-            check_query, 
-            {"user_id": user_id, "link_token": full_link_token}
-        ).fetchone()
+        # Store the token in the token table
+        # First, clear any existing token
+        session.execute(text("DELETE FROM token"))
         
-        if not existing:
-            # Insert new link
-            insert_query = text("""
-                INSERT INTO fintoc_links (
-                    id, user_id, holder_id, institution_id, 
-                    active, status, created_at
-                )
-                VALUES (
-                    :id, :user_id, :holder_id, :institution_id,
-                    true, 'active', NOW()
-                )
-            """)
-            
-            session.execute(insert_query, {
-                "id": full_link_token,
-                "user_id": user_id,
-                "holder_id": holder_id or "unknown",
-                "institution_id": institution_id or "unknown"
-            })
-            session.commit()
-            
-            print(f"💾 Full link token saved for user {user_id}")
-            print(f"   Institution: {institution or 'Unknown'}")
-            print(f"   Holder: {holder_name or 'Unknown'}")
-        else:
-            print(f"ℹ️ Link token already exists for user {user_id}")
+        # Insert the new token
+        insert_query = text("INSERT INTO token (token) VALUES (:token)")
+        session.execute(insert_query, {"token": full_link_token})
+        session.commit()
+        
+        print(f"💾 Token saved: {full_link_token[:30]}...")
         
         return JSONResponse(
             content={
@@ -269,6 +242,86 @@ async def handle_link_token_webhook(
         raise
     except Exception as e:
         print(f"❌ Webhook error: {e}")
+        session.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/save-link")
+async def save_link_token(
+    request: Request,
+    session: Session = Depends(get_session)
+):
+    """
+    Direct endpoint to save link token from client
+    Alternative to webhook for when webhook is not accessible
+    This is called by the frontend after successful widget connection
+    """
+    try:
+        data = await request.json()
+        link_token = data.get("link_token")
+        user_id = data.get("user_id")
+        
+        if not link_token:
+            raise HTTPException(status_code=400, detail="link_token is required")
+        
+        print(f"📥 Saving link token from client for user: {user_id or 'default'}")
+        
+        # Get or create user
+        if not user_id:
+            result = session.execute(text("SELECT id FROM users LIMIT 1"))
+            user = result.fetchone()
+            if user:
+                user_id = str(user[0])
+            else:
+                session.execute(
+                    text("INSERT INTO users (email) VALUES (:email)"),
+                    {"email": "default@example.com"}
+                )
+                session.commit()
+                result = session.execute(text("SELECT id FROM users WHERE email = :email"), 
+                                       {"email": "default@example.com"})
+                user_id = str(result.scalar())
+        
+        print(f"📥 Processing link token for user {user_id}")
+        
+        # Exchange the link token
+        try:
+            link_credentials = exchange_link_token(link_token)
+            link_id = link_credentials.get("link_id")
+            access_token = link_credentials.get("access_token")
+            
+            if not link_id or not access_token:
+                raise Exception("Missing link_id or access_token")
+            
+            full_link_token = f"{link_id}_token_{access_token}"
+            print(f"✅ Got link credentials - link_id: {link_id}")
+            
+        except Exception as e:
+            print(f"❌ Error exchanging link token: {e}")
+            raise HTTPException(status_code=500, detail=f"Failed to exchange link token: {str(e)}")
+        
+        # Save to database
+        # First, clear any existing token
+        session.execute(text("DELETE FROM token"))
+        
+        # Insert the new token
+        insert_query = text("INSERT INTO token (token) VALUES (:token)")
+        session.execute(insert_query, {"token": full_link_token})
+        session.commit()
+        
+        print(f"💾 Token saved: {full_link_token[:30]}...")
+        
+        return JSONResponse(content={
+            "status": "success",
+            "message": "Link token saved",
+            "link_id": link_id,
+            "user_id": user_id
+        })
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"❌ Error: {e}")
         session.rollback()
         raise HTTPException(status_code=500, detail=str(e))
 
