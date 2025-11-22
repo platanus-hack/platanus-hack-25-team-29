@@ -52,24 +52,32 @@ def exchange_link_token(link_token: str) -> Dict[str, Any]:
     """
     Exchange temporary link token for permanent link credentials.
     Returns link_id and access_token from Fintoc.
+    
+    According to Fintoc API: The link token from the widget is temporary
+    and must be exchanged for permanent credentials in the format:
+    LINK_ID_token_LINK_ACCESS_TOKEN
+    
+    See: https://docs.fintoc.com/reference/errors
     """
     if not FINTOC_SECRET_KEY:
         raise Exception("FINTOC_SECRET_KEY not configured")
     
-    url = "https://api.fintoc.com/v1/link_intents"
+    # Use the Links Exchange endpoint
+    url = f"https://api.fintoc.com/v1/links/{link_token}/exchange"
     headers = {"Authorization": FINTOC_SECRET_KEY}
-    data = {"link_token": link_token}
     
     print(f"🔄 Exchanging link token with Fintoc...")
-    response = requests.post(url, headers=headers, json=data)
+    response = requests.get(url, headers=headers)
     
-    if response.status_code in [200, 201]:
+    if response.status_code == 200:
         result = response.json()
         print(f"✅ Successfully exchanged link token")
+        print(f"   Response: {json.dumps(result, indent=2)}")
         return result
     else:
         error_msg = f"Failed to exchange link token: {response.status_code} - {response.text}"
         print(f"❌ {error_msg}")
+        print(f"   Check: https://docs.fintoc.com/reference/errors")
         raise Exception(error_msg)
 
 
