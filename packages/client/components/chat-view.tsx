@@ -271,7 +271,7 @@ export function ChatView() {
     let assistantMessageCreated = false
 
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/agent`, {
+      const response = await fetch(`/api/agent`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
