@@ -1,8 +1,11 @@
 import math
 import json
 from datetime import datetime
-from pathlib import Path
 from typing import Any
+
+from sqlalchemy import text
+
+from app.db import SessionLocal
 
 from claude_agent_sdk import (
     tool,
@@ -84,14 +87,14 @@ async def list_movements(args: dict[str, Any]) -> dict[str, Any]:
     List movements from all bank accounts for the logged-in user.
 
     Args:
-        since: Date using ISO 8601. Return only movements with post_date equal or after since (optional)
-        until: Date using ISO 8601. Return only movements with post_date equal or before until (optional)
+        since: Date using ISO 8601. Return only movements with transaction_date equal or after since (optional)
+        until: Date using ISO 8601. Return only movements with transaction_date equal or before until (optional)
         per_page: Amount of movements per page. Defaults to 30. Maximum is 300 (optional)
         page: The page being retrieved. Starts from 1 (optional)
         confirmed_only: Show only confirmed movements. Defaults to true (optional)
     """
+    session = SessionLocal()
     try:
-        # Fetch movements from database (simulated with JSON)
         since = args.get("since")
         until = args.get("until")
         per_page = args.get("per_page", 30)
@@ -102,56 +105,42 @@ async def list_movements(args: dict[str, Any]) -> dict[str, Any]:
         print(f"Filters: since={since}, until={until}, confirmed_only={confirmed_only}")
         print(f"Pagination: page={page}, per_page={per_page}")
 
-        # Load data from JSON file
-        db_path = Path(__file__).parent.parent / "db" / "example_data.json"
-        try:
-            with open(db_path, "r") as f:
-                data = json.load(f)
-                all_accounts = data.get("accounts", [])
-                all_movements = data.get("movements", [])
-        except FileNotFoundError:
-            print(f"Database file not found at {db_path}")
-            return {
-                "content": [{"type": "text", "text": "Error: Database file not found."}]
-            }
+        # Build Query
+        query_parts = ["SELECT * FROM movements WHERE 1=1"]
+        params = {}
 
-        # Get all account IDs dynamically
-        account_ids = [acc.get("id") for acc in all_accounts if acc.get("id")]
-        print(f"Found {len(account_ids)} accounts: {account_ids}")
-
-        # Filter movements from all accounts (no account_id filter needed - aggregate all)
-        filtered_movements = all_movements
-
-        # Filter by date (since)
         if since:
-            filtered_movements = [
-                m
-                for m in filtered_movements
-                if m.get("post_date") and m.get("post_date", "") >= since
-            ]
+            query_parts.append("AND transaction_date >= :since")
+            params["since"] = since
 
-        # Filter by date (until)
         if until:
-            filtered_movements = [
-                m
-                for m in filtered_movements
-                if m.get("post_date") and m.get("post_date", "") <= until
-            ]
+            query_parts.append("AND transaction_date <= :until")
+            params["until"] = until
 
-        # Filter by confirmed status
         if confirmed_only:
-            filtered_movements = [
-                m for m in filtered_movements if not m.get("pending", False)
-            ]
+            query_parts.append("AND pending = false")
 
-        # Simulate pagination
-        start_idx = (page - 1) * per_page
-        end_idx = start_idx + per_page
+        # Count total matching (before pagination)
+        count_query = "SELECT COUNT(*) FROM movements WHERE 1=1 " + " ".join(
+            query_parts[1:]
+        )
+        total_filtered = session.execute(text(count_query), params).scalar()
 
-        movements = filtered_movements[start_idx:end_idx]
+        # Add sorting and pagination
+        query_parts.append("ORDER BY transaction_date DESC")
+
+        offset = (page - 1) * per_page
+        query_parts.append("LIMIT :limit OFFSET :offset")
+        params["limit"] = per_page
+        params["offset"] = offset
+
+        final_query = " ".join(query_parts)
+        result = session.execute(text(final_query), params)
+
+        # Convert rows to dicts
+        movements = [dict(row._mapping) for row in result]
 
         total_movements = len(movements)
-        total_filtered = len(filtered_movements)
         result_text = f"Found {total_filtered} movement(s) across all accounts (showing {total_movements} on page {page})\n\n"
 
         if movements:
@@ -162,7 +151,9 @@ async def list_movements(args: dict[str, Any]) -> dict[str, Any]:
                 result_text += f"  Amount: {movement.get('amount', 'N/A')}\n"
                 result_text += f"  Currency: {movement.get('currency', 'N/A')}\n"
                 result_text += f"  Description: {movement.get('description', 'N/A')}\n"
-                result_text += f"  Post Date: {movement.get('post_date', 'N/A')}\n"
+                result_text += (
+                    f"  Transaction Date: {movement.get('transaction_date', 'N/A')}\n"
+                )
                 result_text += f"  Status: {movement.get('status', 'N/A')}\n"
                 result_text += "\n"
         else:
@@ -179,6 +170,8 @@ async def list_movements(args: dict[str, Any]) -> dict[str, Any]:
                 }
             ]
         }
+    finally:
+        session.close()
 
 
 @tool(
@@ -189,6 +182,7 @@ async def list_movements(args: dict[str, Any]) -> dict[str, Any]:
         "until": str,  # ISO 8601 date format
         "confirmed_only": bool,
         "min_count": int,  # Minimum number of occurrences to show
+        "limit": int,  # Optional limit on results
     },
 )
 async def aggregate_by_description(args: dict[str, Any]) -> dict[str, Any]:
@@ -196,93 +190,70 @@ async def aggregate_by_description(args: dict[str, Any]) -> dict[str, Any]:
     Aggregate movements by their description to show spending patterns.
 
     Args:
-        since: Date using ISO 8601. Return only movements with post_date equal or after since (optional)
-        until: Date using ISO 8601. Return only movements with post_date equal or before until (optional)
+        since: Date using ISO 8601. Return only movements with transaction_date equal or after since (optional)
+        until: Date using ISO 8601. Return only movements with transaction_date equal or before until (optional)
         confirmed_only: Show only confirmed movements. Defaults to true (optional)
         min_count: Only show descriptions that appear at least this many times. Defaults to 1 (optional)
+        limit: Maximum number of results to return. Defaults to 50 (optional)
     """
+    session = SessionLocal()
     try:
         since = args.get("since")
         until = args.get("until")
         confirmed_only = args.get("confirmed_only", True)
         min_count = args.get("min_count", 1)
+        limit = args.get("limit", 50)
 
         print(f"Aggregating movements by description")
         print(f"Filters: since={since}, until={until}, confirmed_only={confirmed_only}")
 
-        # Load data from JSON file
-        db_path = Path(__file__).parent.parent / "db" / "example_data.json"
-        try:
-            with open(db_path, "r") as f:
-                data = json.load(f)
-                all_movements = data.get("movements", [])
-        except FileNotFoundError:
-            print(f"Database file not found at {db_path}")
-            return {
-                "content": [{"type": "text", "text": "Error: Database file not found."}]
-            }
+        # Build Query
+        query_parts = [
+            """
+            SELECT 
+                description, 
+                COUNT(*) as count, 
+                SUM(amount) as total_amount, 
+                currency
+            FROM movements 
+            WHERE 1=1
+            """
+        ]
+        params = {}
 
-        # Apply filters
-        filtered_movements = all_movements
-
-        # Filter by date (since)
         if since:
-            filtered_movements = [
-                m
-                for m in filtered_movements
-                if m.get("post_date") and m.get("post_date", "") >= since
-            ]
+            query_parts.append("AND transaction_date >= :since")
+            params["since"] = since
 
-        # Filter by date (until)
         if until:
-            filtered_movements = [
-                m
-                for m in filtered_movements
-                if m.get("post_date") and m.get("post_date", "") <= until
-            ]
+            query_parts.append("AND transaction_date <= :until")
+            params["until"] = until
 
-        # Filter by confirmed status
         if confirmed_only:
-            filtered_movements = [
-                m for m in filtered_movements if not m.get("pending", False)
-            ]
+            query_parts.append("AND pending = false")
 
-        # Aggregate by description
-        aggregations = {}
-        for movement in filtered_movements:
-            description = movement.get("description", "Unknown")
-            amount = movement.get("amount", 0)
-            currency = movement.get("currency", "CLP")
+        query_parts.append("GROUP BY description, currency")
 
-            if description not in aggregations:
-                aggregations[description] = {
-                    "count": 0,
-                    "total_amount": 0,
-                    "currency": currency,
-                    "amounts": [],
-                }
+        if min_count > 1:
+            query_parts.append("HAVING COUNT(*) >= :min_count")
+            params["min_count"] = min_count
 
-            aggregations[description]["count"] += 1
-            aggregations[description]["total_amount"] += amount
-            aggregations[description]["amounts"].append(amount)
+        query_parts.append("ORDER BY ABS(SUM(amount)) DESC")
+        query_parts.append("LIMIT :limit")
+        params["limit"] = limit
 
-        # Filter by min_count
-        aggregations = {
-            desc: data
-            for desc, data in aggregations.items()
-            if data["count"] >= min_count
-        }
+        final_query = " ".join(query_parts)
+        result = session.execute(text(final_query), params)
 
-        # Sort by total amount (absolute value, descending)
-        sorted_aggregations = sorted(
-            aggregations.items(), key=lambda x: abs(x[1]["total_amount"]), reverse=True
-        )
+        sorted_aggregations = [dict(row._mapping) for row in result]
 
         # Format result
-        result_text = f"Found {len(sorted_aggregations)} unique description(s) with {sum(a['count'] for _, a in sorted_aggregations)} total movements\n\n"
+        total_movements_count = sum(a["count"] for a in sorted_aggregations)
+        result_text = f"Found {len(sorted_aggregations)} unique description(s) with {total_movements_count} total movements\n\n"
 
         if sorted_aggregations:
-            for i, (description, data) in enumerate(sorted_aggregations, 1):
+            for i, data in enumerate(sorted_aggregations, 1):
+                description = data.get("description", "Unknown")
                 count = data["count"]
                 total = data["total_amount"]
                 currency = data["currency"]
@@ -307,6 +278,8 @@ async def aggregate_by_description(args: dict[str, Any]) -> dict[str, Any]:
                 }
             ]
         }
+    finally:
+        session.close()
 
 
 @tool(
@@ -317,6 +290,7 @@ async def aggregate_by_description(args: dict[str, Any]) -> dict[str, Any]:
         "until": str,  # ISO 8601 date format
         "confirmed_only": bool,
         "min_count": int,  # Minimum number of occurrences to show
+        "limit": int,  # Optional limit on results
     },
 )
 async def aggregate_transfers_by_holder(args: dict[str, Any]) -> dict[str, Any]:
@@ -324,133 +298,88 @@ async def aggregate_transfers_by_holder(args: dict[str, Any]) -> dict[str, Any]:
     Aggregate transfer movements by the holder name to show transfer patterns.
 
     Args:
-        since: Date using ISO 8601. Return only movements with post_date equal or after since (optional)
-        until: Date using ISO 8601. Return only movements with post_date equal or before until (optional)
+        since: Date using ISO 8601. Return only movements with transaction_date equal or after since (optional)
+        until: Date using ISO 8601. Return only movements with transaction_date equal or before until (optional)
         confirmed_only: Show only confirmed movements. Defaults to true (optional)
         min_count: Only show holders that appear at least this many times. Defaults to 1 (optional)
+        limit: Maximum number of results to return. Defaults to 50 (optional)
     """
+    session = SessionLocal()
     try:
         since = args.get("since")
         until = args.get("until")
         confirmed_only = args.get("confirmed_only", True)
         min_count = args.get("min_count", 1)
+        limit = args.get("limit", 50)
 
         print(f"Aggregating transfers by holder name")
         print(f"Filters: since={since}, until={until}, confirmed_only={confirmed_only}")
 
-        # Load data from JSON file
-        db_path = Path(__file__).parent.parent / "db" / "example_data.json"
-        try:
-            with open(db_path, "r") as f:
-                data = json.load(f)
-                all_movements = data.get("movements", [])
-        except FileNotFoundError:
-            print(f"Database file not found at {db_path}")
-            return {
-                "content": [{"type": "text", "text": "Error: Database file not found."}]
-            }
+        # Build Query
+        query_parts = [
+            """
+            SELECT 
+                c.holder_name,
+                COUNT(*) as count,
+                SUM(m.amount) as total_amount,
+                m.currency
+            FROM movements m
+            JOIN counterparties c ON m.counterparty_id = c.id
+            WHERE 1=1
+            """
+        ]
+        # We assume 'transfer' type check might be needed,
+        # but init.sql doesn't strictly enforce movement_type enum.
+        # Based on previous python code: if m.get("type") == "transfer"
+        # Let's check if we should add that filter.
+        query_parts.append("AND m.movement_type = 'transfer'")
 
-        # Filter only transfer type movements
-        filtered_movements = [m for m in all_movements if m.get("type") == "transfer"]
+        params = {}
 
-        # Filter by date (since)
         if since:
-            filtered_movements = [
-                m
-                for m in filtered_movements
-                if m.get("post_date") and m.get("post_date", "") >= since
-            ]
+            query_parts.append("AND m.transaction_date >= :since")
+            params["since"] = since
 
-        # Filter by date (until)
         if until:
-            filtered_movements = [
-                m
-                for m in filtered_movements
-                if m.get("post_date") and m.get("post_date", "") <= until
-            ]
+            query_parts.append("AND m.transaction_date <= :until")
+            params["until"] = until
 
-        # Filter by confirmed status
         if confirmed_only:
-            filtered_movements = [
-                m for m in filtered_movements if not m.get("pending", False)
-            ]
+            query_parts.append("AND m.pending = false")
 
-        # Aggregate by holder name
-        aggregations = {}
-        for movement in filtered_movements:
-            amount = movement.get("amount", 0)
-            currency = movement.get("currency", "CLP")
+        query_parts.append("GROUP BY c.holder_name, m.currency")
 
-            # Get holder name from recipient or sender
-            holder_name = None
-            holder_type = None
-            institution_name = None
+        if min_count > 1:
+            query_parts.append("HAVING COUNT(*) >= :min_count")
+            params["min_count"] = min_count
 
-            if movement.get("recipient_account"):
-                holder_name = movement["recipient_account"].get("holder_name")
-                holder_type = "sent to"
-                institution_name = (
-                    movement["recipient_account"]
-                    .get("institution", {})
-                    .get("name", "Unknown")
-                )
-            elif movement.get("sender_account"):
-                holder_name = movement["sender_account"].get("holder_name")
-                holder_type = "received from"
-                institution_name = (
-                    movement["sender_account"]
-                    .get("institution", {})
-                    .get("name", "Unknown")
-                )
+        query_parts.append("ORDER BY ABS(SUM(m.amount)) DESC")
+        query_parts.append("LIMIT :limit")
+        params["limit"] = limit
 
-            if not holder_name:
-                holder_name = "Unknown"
-                holder_type = "unknown"
-                institution_name = "Unknown"
+        final_query = " ".join(query_parts)
+        result = session.execute(text(final_query), params)
 
-            key = holder_name
-
-            if key not in aggregations:
-                aggregations[key] = {
-                    "count": 0,
-                    "total_amount": 0,
-                    "currency": currency,
-                    "holder_type": holder_type,
-                    "institution": institution_name,
-                    "amounts": [],
-                }
-
-            aggregations[key]["count"] += 1
-            aggregations[key]["total_amount"] += amount
-            aggregations[key]["amounts"].append(amount)
-
-        # Filter by min_count
-        aggregations = {
-            holder: data
-            for holder, data in aggregations.items()
-            if data["count"] >= min_count
-        }
-
-        # Sort by total amount (absolute value, descending)
-        sorted_aggregations = sorted(
-            aggregations.items(), key=lambda x: abs(x[1]["total_amount"]), reverse=True
-        )
+        sorted_aggregations = [dict(row._mapping) for row in result]
 
         # Format result
-        result_text = f"Found {len(sorted_aggregations)} unique holder(s) with {sum(a['count'] for _, a in sorted_aggregations)} total transfers\n\n"
+        total_transfers_count = sum(a["count"] for a in sorted_aggregations)
+        result_text = f"Found {len(sorted_aggregations)} unique holder(s) with {total_transfers_count} total transfers\n\n"
 
         if sorted_aggregations:
-            for i, (holder_name, data) in enumerate(sorted_aggregations, 1):
+            for i, data in enumerate(sorted_aggregations, 1):
+                holder_name = data.get("holder_name", "Unknown")
                 count = data["count"]
                 total = data["total_amount"]
                 currency = data["currency"]
                 avg = total / count if count > 0 else 0
-                holder_type = data["holder_type"]
-                institution = data["institution"]
+
+                # Note: Institution and Holder Type (sent/received) logic is harder to replicate purely in SQL
+                # without more complex joins or schema knowledge about 'recipient_account' vs 'sender_account'
+                # which seems to be part of the JSON structure but flattened in SQL.
+                # We will omit detailed institution info for now as it's not in the simple join.
 
                 result_text += f"{i}. {holder_name}\n"
-                result_text += f"   Institution: {institution}\n"
-                result_text += f"   Type: {holder_type}\n"
                 result_text += f"   Count: {count} transfer(s)\n"
                 result_text += f"   Total: {total:,.0f} {currency}\n"
                 result_text += f"   Average: {avg:,.0f} {currency}\n"
@@ -469,6 +398,85 @@ async def aggregate_transfers_by_holder(args: dict[str, Any]) -> dict[str, Any]:
                 }
             ]
         }
+    finally:
+        session.close()
+
+
+@tool(
+    "execute_query",
+    "Execute a raw SQL query against the database",
+    {"query": str},
+)
+async def execute_query(args: dict[str, Any]) -> dict[str, Any]:
+    """
+    Execute a raw SQL query against the database.
+    WARNING: This tool allows executing any SQL query. Use with caution.
+    """
+    session = SessionLocal()
+    try:
+        query = args["query"]
+        print(f"Executing query: {query}")
+
+        result = session.execute(text(query))
+
+        if result.returns_rows:
+            rows = [dict(row._mapping) for row in result]
+            return {
+                "content": [
+                    {"type": "text", "text": json.dumps(rows, default=str, indent=2)}
+                ]
+            }
+        else:
+            session.commit()
+            return {
+                "content": [{"type": "text", "text": "Query executed successfully."}]
+            }
+    except Exception as e:
+        return {
+            "content": [{"type": "text", "text": f"Error executing query: {str(e)} "}]
+        }
+    finally:
+        session.close()
+
+
+@tool(
+    "get_movements_schema",
+    "Get the schema definition of the movements table",
+    {},
+)
+async def get_movements_schema(args: dict[str, Any]) -> dict[str, Any]:
+    """
+    Get the column definitions for the movements table to understand the data structure.
+    """
+    session = SessionLocal()
+    try:
+        # Query information_schema for columns
+        query = """
+        SELECT column_name, data_type, is_nullable
+        FROM information_schema.columns
+        WHERE table_name = 'movements'
+        ORDER BY ordinal_position;
+        """
+        result = session.execute(text(query))
+        columns = [dict(row._mapping) for row in result]
+
+        formatted_schema = "Table: movements\n\n"
+        if columns:
+            for col in columns:
+                formatted_schema += f"- {col['column_name']} ({col['data_type']})"
+                if col["is_nullable"] == "NO":
+                    formatted_schema += " NOT NULL"
+                formatted_schema += "\n"
+        else:
+            formatted_schema += "No columns found or table does not exist."
+
+        return {"content": [{"type": "text", "text": formatted_schema}]}
+    except Exception as e:
+        return {
+            "content": [{"type": "text", "text": f"Error getting schema: {str(e)}"}]
+        }
+    finally:
+        session.close()
 
 
 @tool(
@@ -500,8 +508,8 @@ async def get_date(args: dict[str, Any]) -> dict[str, Any]:
 
 
 # Create SDK MCP server config for tools (in-process, not a separate MCP server)
-calculator_tools = create_sdk_mcp_server(
-    name="calculator",
+lucas_tools = create_sdk_mcp_server(
+    name="lucas_tools",
     version="1.0.0",
     tools=[
         calculate,
@@ -510,6 +518,8 @@ calculator_tools = create_sdk_mcp_server(
         aggregate_by_description,
         aggregate_transfers_by_holder,
         get_date,
+        execute_query,
+        get_movements_schema,
     ],
 )
 
@@ -520,7 +530,8 @@ if __name__ == "__main__":
     async def main():
         # Create Claude SDK client with tools
         options = ClaudeAgentOptions(
-            mcp_servers={"Tools": calculator_tools},
+            model="claude-haiku-4-5",
+            mcp_servers={"Tools": lucas_tools},
             permission_mode="bypassPermissions",
             continue_conversation=True,
             allowed_tools=[
@@ -530,6 +541,8 @@ if __name__ == "__main__":
                 "mcp__Tools__aggregate_transfers_by_holder",
                 "mcp__Tools__calculate",
                 "mcp__Tools__compound_interest",
+                "mcp__Tools__execute_query",
+                "mcp__Tools__get_movements_schema",
             ],
             system_prompt="""Eres un contador de finanzas personales especializado en análisis de gastos.
 
@@ -539,6 +552,8 @@ IMPORTANTE - FLUJO OBLIGATORIO:
 3. Luego usa list_movements con las fechas en formato ISO 8601 (YYYY-MM-DD)
 4. Para análisis de patrones de gasto, usa aggregate_by_description para agrupar gastos por descripción
 5. Para análisis de transferencias, usa aggregate_transfers_by_holder para ver a quién transfieres
+6. Si necesitas información más específica que no cubren las herramientas anteriores, puedes usar execute_query para consultas SQL directas, pero ten cuidado de escribir SQL válido.
+7. Si no conoces la estructura de la tabla movements, usa get_movements_schema.
 
 Cuando el usuario pregunte sobre períodos relativos como "la semana pasada", "este mes", etc:
 - PRIMERO llama a get_date para obtener la fecha actual
@@ -552,6 +567,8 @@ Herramientas disponibles:
 - get_date: Obtiene la fecha actual
 - calculate: Realiza cálculos matemáticos
 - compound_interest: Calcula interés compuesto
+- execute_query: Ejecuta una consulta SQL arbitraria (SOLO si es necesario)
+- get_movements_schema: Obtiene la estructura de la tabla movements
 
 Tu objetivo es ayudar a los usuarios a entender su estado financiero y a tomar decisiones informadas sobre su dinero.
 """,
