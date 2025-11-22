@@ -3,13 +3,12 @@ import { NextRequest } from "next/server";
 export const runtime = 'edge'; // Use edge runtime for better streaming
 export const maxDuration = 60;
 
-const PYTHON_BACKEND_URL = process.env.NEXT_PUBLIC_API_URL;
 
 export async function POST(req: NextRequest) {
   const { prompt, systemPrompt, maxTurns } = await req.json();
 
   // Forward request to Python backend
-  const response = await fetch(`${PYTHON_BACKEND_URL}/api/agent`, {
+  const response = await fetch(`/api/agent`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
