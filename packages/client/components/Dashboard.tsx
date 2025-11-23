@@ -204,8 +204,8 @@ export default function Dashboard({ movements = [], accounts = [] }: { movements
           </div>
 
           {/* Chart Card (Styled like the Green Widget) */}
-          <div className="w-full bg-gradient-to-br from-[#4FB2A3] to-[#3B8D83] rounded-3xl p-5 pb-8 text-white shadow-xl overflow-hidden relative">
-            <div className="flex justify-between items-start mb-2">
+          <div className="w-full bg-gradient-to-br from-[#4FB2A3] to-[#3B8D83] rounded-3xl p-4 pb-4 text-white shadow-xl overflow-hidden relative">
+            <div className="flex justify-between items-start mb-0">
               <div>
                 <h3 className="text-teal-100 text-sm font-medium font-display">Ahorros Totales</h3>
                 <p className="text-3xl font-semibold mt-1">{formatCurrency(5200.00)}</p>
@@ -216,7 +216,7 @@ export default function Dashboard({ movements = [], accounts = [] }: { movements
             </div>
             
             {/* Chart Area */}
-            <div className="h-64 w-full mt-4">
+            <div className="h-64 w-full mt-0 mb-14">
               <Carousel setApi={handleSetApi}>
                 <CarouselContent>
                   {slides.map((slide, i) => (
