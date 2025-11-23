@@ -20,7 +20,7 @@ export default async function DashboardPage() {
   const { movements } = await response.json();
   
   return (
-    <div className="flex min-h-screen items-center justify-center p-8">
+    <div className="flex min-h-screen items-center justify-center p-8 pb-28">
       <div className="w-full max-w-4xl">
         <h1 className="text-3xl font-semibold mb-4 font-display">Dashboard</h1>
         <div className="grid gap-4 grid-cols-2">

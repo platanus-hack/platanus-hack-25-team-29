@@ -148,7 +148,7 @@ export default function ConnectBankPage() {
         <div className="min-h-screen bg-[#F2F4F6] dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 font-sans pb-20">
             
             {/* Mobile Header */}
-            <header className="sticky top-0 z-10 bg-[#F2F4F6]/90 dark:bg-zinc-950/90 backdrop-blur-md px-6 py-6 flex items-center justify-center">
+            <header className="bg-[#F2F4F6]/90 backdrop-blur-md px-6 py-6 mb-6 flex items-center justify-center">
                 <h2 className="text-xl font-semibold font-display tracking-wide">
                     Cuentas Bancarias
                 </h2>
@@ -302,7 +302,7 @@ export default function ConnectBankPage() {
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm p-0 sm:p-4"
+                        className="fixed inset-0 z-100 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm p-0 sm:p-4"
                     >
                         <motion.div 
                             initial={{ y: "100%" }}
