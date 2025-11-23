@@ -59,7 +59,7 @@ const ThinkingBubble = () => (
     className="flex w-full justify-start mb-6"
   >
     <div className="flex items-start max-w-[90%] md:max-w-[80%] gap-3">
-      <div className="flex-shrink-0 w-8 h-8 mt-1 rounded-full bg-white border border-gray-200 flex items-center justify-center text-purple-600 shadow-sm">
+      <div className="shrink-0 w-8 h-8 mt-1 rounded-full bg-white border border-gray-200 flex items-center justify-center text-purple-600 shadow-sm">
         <Sparkles size={16} />
       </div>
       <div className="px-4 py-3 bg-white border border-gray-100 rounded-2xl rounded-tl-sm shadow-sm flex items-center gap-3">
@@ -80,7 +80,7 @@ const ThinkingBubble = () => (
             className="w-2 h-2 bg-blue-400 rounded-full" 
           />
         </span>
-        <span className="text-xs text-gray-500 font-medium uppercase tracking-wide">Processing</span>
+        <span className="text-xs text-gray-400 font-medium tracking-wide">Pensando ...</span>
       </div>
     </div>
   </motion.div>
@@ -125,9 +125,9 @@ const MessageBubble = ({
         <div className={`flex max-w-[88%] md:max-w-[80%] gap-2 md:gap-3 ${isUser ? 'flex-row-reverse' : 'flex-row'}`}>
 
           {/* Avatar - Hidden on very small screens for User to save space, optional */}
-          <div className={`flex-shrink-0 w-7 h-7 md:w-9 md:h-9 mt-0.5 rounded-full flex items-center justify-center shadow-sm transition-all
+          <div className={`shrink-0 size-7 md:w-9 md:h-9 mt-0.5 rounded-full flex items-center justify-center transition-all
             ${isUser
-              ? 'bg-blue-600 text-white'
+              ? 'bg-[#5CB1A9] text-white'
               : 'bg-white border border-gray-200 text-purple-600'
             }`}>
             {isUser ? <User size={15} className="md:w-5 md:h-5" /> : <Bot size={16} className="md:w-5 md:h-5" />}
@@ -150,10 +150,10 @@ const MessageBubble = ({
                BUBBLE BODY STYLING
                - Using break-words to ensure long URLs or strings don't break layout on mobile.
             */}
-            <div className={`relative px-4 py-3 md:px-6 md:py-4 shadow-sm text-sm md:text-base leading-relaxed w-full break-words
+            <div className={`relative px-4 py-3 md:px-6 md:py-4 text-sm md:text-base leading-relaxed w-full wrap-break-word
               ${isUser
-                ? 'bg-blue-600 text-white rounded-2xl rounded-tr-sm'
-                : 'bg-white border border-gray-200 text-gray-800 rounded-2xl rounded-tl-sm'
+                ? 'bg-[#4c928b] text-white rounded-3xl rounded-tr-sm'
+                : 'bg-white border border-gray-200 text-gray-800 rounded-3xl'
               }`}>
 
               {/* Render Tools (Enhanced Cards) */}
@@ -425,7 +425,7 @@ export function ChatView() {
           
           {messages.length === 0 && (
             <div className="mt-24 flex flex-col items-center justify-center opacity-60 px-4 text-center">
-              <div className="w-16 h-16 bg-white rounded-2xl shadow-sm flex items-center justify-center mb-6 border border-slate-100">
+              <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center mb-6 border border-slate-100">
                 <Bot className="text-blue-500 w-8 h-8" />
               </div>
               <h2 className="text-xl font-semibold text-slate-800 mb-2">How can I help?</h2>
@@ -471,7 +471,7 @@ export function ChatView() {
                 <button
                   onClick={sendMessage}
                   disabled={!input.trim()}
-                  className="p-3 bg-[#5CB1A9] text-white rounded-full disabled:opacity-50 hover:bg-blue-700 shadow-sm transition-all hover:scale-105 active:scale-95"
+                  className="p-3 bg-[#5CB1A9] text-white rounded-full disabled:opacity-50 hover:bg-blue-700 transition-all hover:scale-105 active:scale-95"
                 >
                   <Send size={20} />
                 </button>
