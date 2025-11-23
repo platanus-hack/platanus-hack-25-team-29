@@ -1,0 +1,21 @@
+[project]
+name = "agent-streaming-server"
+version = "1.0.0"
+description = "Minimal Claude Agent SDK streaming server for production deployment"
+requires-python = ">=3.12"
+dependencies = [
+    "claude-agent-sdk>=0.1.9",
+    "fastapi>=0.121.3",
+    "python-dotenv>=1.0.0",
+    "requests>=2.32.0",
+    "uvicorn[standard]>=0.38.0",
+    "sqlalchemy>=2.0.0",
+    "psycopg2-binary>=2.9.0",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["app"]

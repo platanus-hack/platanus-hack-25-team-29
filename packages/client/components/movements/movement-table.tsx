@@ -36,14 +36,20 @@ export function MovementTable({ movements, accounts = [] }: MovementTableProps) 
     const getAccountName = (accountId: string) => {
         const account = accounts.find(acc => acc.id === accountId);
         if (!account) return 'Unknown Bank';
-        
+
         // Format: institution_name - name - holder_name
         const parts = [];
         if (account.institution_name) parts.push(account.institution_name);
         if (account.name) parts.push(account.name);
         if (account.holder_name) parts.push(account.holder_name);
-        
+
         return parts.length > 0 ? parts.join(' - ') : 'Unknown Bank';
+    };
+
+    const truncateText = (text: string, maxLength: number = 50) => {
+        if (!text) return '';
+        if (text.length <= maxLength) return text;
+        return text.substring(0, maxLength) + '...';
     };
     const formatCurrency = (amount: number, currency: string = 'CLP') => {
         return new Intl.NumberFormat('es-CL', {
@@ -95,7 +101,6 @@ export function MovementTable({ movements, accounts = [] }: MovementTableProps) 
                     <TableRow className="bg-muted/50">
                         <TableHead className="w-[40px]"></TableHead>
                         <TableHead className="font-semibold min-w-[200px] max-w-[300px]">Description</TableHead>
-                        <TableHead className="font-semibold min-w-[120px] max-w-[180px]">Bank</TableHead>
                         <TableHead className="font-semibold w-[110px]">Date</TableHead>
                         <TableHead className="font-semibold w-[100px] hidden md:table-cell">Status</TableHead>
                         <TableHead className="text-right font-semibold min-w-[120px]">Amount</TableHead>
@@ -109,25 +114,20 @@ export function MovementTable({ movements, accounts = [] }: MovementTableProps) 
                             </TableCell>
                             <TableCell className="py-4 max-w-[300px]">
                                 <div className="space-y-1">
-                                    <p className="font-medium text-sm truncate" title={movement.description}>
-                                        {movement.description}
+                                    <p className="font-medium text-sm" title={movement.description}>
+                                        {truncateText(movement.description, 50)}
                                     </p>
                                     {movement.comment && (
-                                        <p className="text-xs text-muted-foreground truncate" title={movement.comment}>
-                                            {movement.comment}
+                                        <p className="text-xs text-muted-foreground" title={movement.comment}>
+                                            {truncateText(movement.comment, 50)}
                                         </p>
                                     )}
                                     {movement.reference_id && (
-                                        <p className="text-xs text-muted-foreground font-mono truncate" title={movement.reference_id}>
-                                            Ref: {movement.reference_id}
+                                        <p className="text-xs text-muted-foreground font-mono" title={movement.reference_id}>
+                                            Ref: {truncateText(movement.reference_id, 30)}
                                         </p>
                                     )}
                                 </div>
-                            </TableCell>
-                            <TableCell className="py-4 max-w-[180px]">
-                                <p className="font-medium text-sm truncate" title={getAccountName(movement.account_id)}>
-                                    {getAccountName(movement.account_id)}
-                                </p>
                             </TableCell>
                             <TableCell className="py-4">
                                 <p className="font-medium text-sm whitespace-nowrap">{formatDate(movement.post_date)}</p>

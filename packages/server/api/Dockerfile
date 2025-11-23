@@ -24,12 +24,14 @@ RUN uv sync --frozen
 ENV PORT=8080
 EXPOSE 8080
 
-# Run uvicorn with streaming-optimized timeout settings, then ngrok
 RUN echo '#!/bin/bash\n\
-uv run uvicorn app.main:app --host 0.0.0.0 --port $PORT --timeout-keep-alive 0 --timeout-graceful-shutdown 120 &\n\
+set -e\n\
+uv run uvicorn app.main:app --host 0.0.0.0 --port $PORT &\n\
 sleep 3\n\
-ngrok http $PORT --log stdout\n\
+# Start ngrok (this becomes the main process)\n\
+exec ngrok http $PORT --log stdout\n\
 ' > /app/start.sh && chmod +x /app/start.sh
+
 
 # Run both services
 CMD ["/app/start.sh"]
