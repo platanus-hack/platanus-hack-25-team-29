@@ -35,31 +35,6 @@ interface BankAccount {
     account_number?: string;     // For extracting last4 digits
 }
 
-// --- Dummy Data for Visualization ---
-// This mimics the data structure you'll eventually get, populated for the UI design
-const DUMMY_ACCOUNTS: BankAccount[] = [
-    { 
-        id: "1", 
-        name: "Main Checking", 
-        institution_name: "Banco de Chile", 
-        holder_name: "Ashik", 
-        type: "checking", 
-        balance: 2250.00, 
-        currency: "USD",
-        last4: "4521" 
-    },
-    { 
-        id: "2", 
-        name: "Savings Goal", 
-        institution_name: "Santander", 
-        holder_name: "Ashik", 
-        type: "savings", 
-        balance: 450.00, 
-        currency: "USD",
-        last4: "8832" 
-    }
-];
-
 const formatCurrency = (amount: number) => {
     const numberString = new Intl.NumberFormat('es-CL', {
         style: 'decimal',
@@ -101,7 +76,7 @@ export default function ConnectBankPage() {
                 if (fetchedAccounts.length > 0) {
                     setHasExistingConnection(true);
                     // Use real data from API - extract last4 from account_number
-                    setAccounts(fetchedAccounts.map((acc: any) => ({
+                    setAccounts(fetchedAccounts.map((acc: BankAccount) => ({
                         ...acc,
                         last4: acc.account_number?.slice(-4) || '0000'
                     })));
@@ -160,8 +135,8 @@ export default function ConnectBankPage() {
             await checkExistingConnection();
             await fetchMovements(); // Also refresh movements after sync
 
-        } catch (err: any) {
-            setSyncError(err.message || 'Failed to sync data');
+        } catch (err: unknown) {
+            setSyncError(err instanceof Error ? err.message : 'Failed to sync data');
         } finally {
             setIsSyncing(false);
         }
