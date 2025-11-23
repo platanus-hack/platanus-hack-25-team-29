@@ -165,7 +165,7 @@ export default function Dashboard({ movements = [], accounts = [] }: { movements
           {/* 3. Total Balance Section */}
           <div className="pt-4">
             <p className="text-gray-500 text-sm font-medium font-display">Saldo total</p>
-            <h2 className="text-4xl font-bold text-gray-900 mt-1">
+            <h2 className="text-4xl font-medium text-gray-900 mt-1">
               {formatCurrency(totalBalance)}
             </h2>
           </div>
