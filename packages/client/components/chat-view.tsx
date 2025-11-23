@@ -404,11 +404,11 @@ export function ChatView() {
   return (
     <div className="flex flex-col h-screen w-full bg-slate-50 font-sans text-slate-900">
       {/* Header */}
-      <div className="flex items-center justify-center py-6 bg-white/80 backdrop-blur-md border-slate-200 sticky top-0 w-full">
+      <div className="flex items-center justify-center py-6 mb-6 bg-white/80 backdrop-blur-md border-slate-200 sticky top-0 w-full z-20">
         <div className="flex items-center justify-center">
-          <span className="font-semibold text-slate-700 font-display">
+          <h2 className="text-xl font-semibold font-display tracking-wide">
             Consultas Financieras
-          </span>
+          </h2>
         </div>
         <button
           onClick={handleClearChat}
