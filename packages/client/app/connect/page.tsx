@@ -137,9 +137,8 @@ export default function ConnectBankPage() {
     const totalBalance = accounts.reduce((acc, curr) => acc + (curr.balance || 0), 0);
 
     const formatCurrency = (amount: number) => {
-        return new Intl.NumberFormat('en-US', {
-            style: 'currency',
-            currency: 'USD',
+        return new Intl.NumberFormat('en-CL', {
+            style: 'decimal'
         }).format(amount);
     };
 
