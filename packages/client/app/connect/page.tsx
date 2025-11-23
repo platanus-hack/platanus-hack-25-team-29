@@ -214,7 +214,7 @@ export default function ConnectBankPage() {
                             onClick={() => setIsConnectModalOpen(true)}
                             className="text-teal-600 hover:text-teal-700 hover:bg-teal-50 dark:hover:bg-teal-900/20"
                         >
-                            <Plus className="h-4 w-4 mr-1" /> Add New
+                            <Plus className="size-4" /> Agregar nuevo
                         </Button>
                     </div>
 
