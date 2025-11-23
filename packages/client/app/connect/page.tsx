@@ -199,6 +199,10 @@ export default function ConnectBankPage() {
             .reduce((sum, m) => sum + m.amount, 0)
     );
 
+    // Calculate monthly net change and savings rate
+    const monthlyNetChange = monthlyIncome - monthlyExpenses;
+    const savingsRate = monthlyIncome > 0 ? (monthlyNetChange / monthlyIncome) * 100 : 0;
+
     return (
         <div className="min-h-screen bg-[#F2F4F6] dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 font-sans pb-20">
             
@@ -227,9 +231,21 @@ export default function ConnectBankPage() {
                                     <h1 className="text-4xl font-medium text-zinc-900 dark:text-white tracking-tight font-display">
                                         {hasExistingConnection ? formatCurrency(totalBalance) : '$0.00'}
                                     </h1>
-                                    <span className="text-xs bg-green-600 text-white px-2 py-[6px] h-fit rounded-full font-medium flex items-center gap-1 tracking-wide">
-                                        +4.50%
-                                    </span>
+                                    {/* Savings Rate Badge */}
+                                    {isLoadingMovements ? (
+                                        <div className="h-6 w-16 bg-zinc-200 dark:bg-zinc-700 rounded-full animate-pulse" />
+                                    ) : hasExistingConnection && monthlyIncome > 0 ? (
+                                        <span className={cn(
+                                            "text-xs px-2 py-[6px] h-fit rounded-full font-medium flex items-center gap-1 tracking-wide",
+                                            savingsRate > 0
+                                                ? "bg-emerald-600 text-white"
+                                                : savingsRate < 0
+                                                ? "bg-red-600 text-white"
+                                                : "bg-zinc-400 text-white"
+                                        )}>
+                                            {savingsRate > 0 ? '+' : ''}{savingsRate.toFixed(2)}%
+                                        </span>
+                                    ) : null}
                                 </div>
                                 
                                 <div className="mt-8 grid grid-cols-2 gap-4">
