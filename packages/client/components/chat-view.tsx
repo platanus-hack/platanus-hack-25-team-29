@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useRef, useEffect, useState } from "react"
+import React, { useRef, useEffect, useState, useCallback } from "react"
 import { useAppDispatch, useAppSelector } from "@/store/hooks"
 import {
   addMessage,
@@ -24,7 +24,8 @@ import {
   Bot,
   User,
   StopCircle,
-  Sparkles
+  Sparkles,
+  ArrowDown,
 } from "lucide-react"
 import ReactMarkdown from "react-markdown"
 import remarkGfm from "remark-gfm"
@@ -32,6 +33,15 @@ import remarkGfm from "remark-gfm"
 // Enhanced tool components
 import { EnhancedToolCard } from "./enhanced-tool-card"
 import { InlineToolStatus } from "./inline-tool-status"
+
+// ToolChain component to display multiple tools
+const ToolChain = ({ tools }: { tools: ToolUse[] }) => (
+  <div className="mb-3 w-full">
+    {tools.map((tool, idx) => (
+      <EnhancedToolCard key={tool.id || idx} tool={tool} />
+    ))}
+  </div>
+)
 
 // API Configuration
 // NEXT_PUBLIC_AGENT_API_URL: Dedicated agent streaming server URL
