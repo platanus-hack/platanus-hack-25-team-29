@@ -446,7 +446,7 @@ export function ChatView() {
       </div>
 
       {/* Input Area - MATCHING WIDTH */}
-      <div className="p-3 md:p-6 bg-transparent">
+      <div className="p-3 pb-24 md:p-6 md:pb-28 bg-transparent">
         <div className="w-full max-w-4xl lg:max-w-5xl mx-auto relative">
           <div className="relative flex justify-between items-center gap-1 bg-slate-50 border border-slate-200 rounded-full p-2 shadow-sm focus-within:ring-2 focus-within:ring-blue-100 focus-within:border-blue-300 transition-all">
             <textarea

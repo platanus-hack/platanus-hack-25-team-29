@@ -144,16 +144,8 @@ export default function ConnectBankPage() {
     };
 
     return (
-        <div className="min-h-screen bg-[#F2F4F6] dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 font-sans pb-20">
-            
-            {/* Mobile Header */}
-            <header className="sticky top-0 z-10 bg-[#F2F4F6]/90 dark:bg-zinc-950/90 backdrop-blur-md px-6 py-6 flex items-center justify-center">
-                <h2 className="text-xl font-medium font-display">
-                    Mis Cuentas
-                </h2>
-            </header>
-
-            <main className="max-w-md mx-auto px-6 pt-2 space-y-8">
+        <div className="min-h-screen bg-[#F2F4F6] dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 font-sans pb-28">
+            <main className="max-w-md mx-auto px-6 pt-8 space-y-8">
                 {/* Section 1: Total Balance Card (Hero) */}
                 <section>
                     <div className="flex justify-between items-end mb-4">

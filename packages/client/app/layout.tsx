@@ -1,10 +1,8 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono, Titillium_Web } from "next/font/google";
 import "./globals.css";
-import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
-import { AppSidebar, MobileSidebarContent } from "@/components/app-sidebar";
-import { cookies } from "next/headers"
 import { ReduxProvider } from "./providers"
+import { BottomNav } from "@/components/bottom-nav";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -32,22 +30,14 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  
-  // const cookieStore = await cookies()
-  // const defaultOpen = cookieStore.get("sidebar_state")?.value === "true"
-
   return (
     <html lang="en">
-      <body className={`${geistSans.variable} ${geistMono.variable} ${titilliumWeb.variable} antialiased`} >
+      <body className={`${geistSans.variable} ${geistMono.variable} ${titilliumWeb.variable} antialiased`}>
         <ReduxProvider>
-          <SidebarProvider defaultOpen={true}>
-            <AppSidebar />
-            <MobileSidebarContent />
-            <main className="flex-1 w-full">
-              <SidebarTrigger className="hidden md:flex" />
-              {children}
-            </main>
-          </SidebarProvider>
+          <main className="w-full min-h-screen">
+            {children}
+          </main>
+          <BottomNav />
         </ReduxProvider>
       </body>
     </html>
