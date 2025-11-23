@@ -41,14 +41,16 @@ def get_engine():
         _engine = create_engine(
             database_url,
             poolclass=QueuePool,
-            pool_size=5,              # Maintain 5 persistent connections
-            max_overflow=10,          # Allow up to 15 total connections
+            pool_size=10,              # Maintain 5 persistent connections
+            max_overflow=20,          # Allow up to 15 total connections
             pool_pre_ping=True,       # Verify connection health before use
-            pool_recycle=3600,        # Recycle connections every hour
+            pool_recycle=300,         # Recycle connections every hour
+            pool_timeout=30,
             connect_args={
                 "connect_timeout": 10,
                 "options": "-c statement_timeout=30000"
-            }
+            },
+            pool_reset_on_return='rollback',  # Clean state on return
         )
         logger.info("Database engine created successfully with QueuePool (size=5, max=15)")
     return _engine
