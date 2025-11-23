@@ -5,8 +5,12 @@
 
 **Tu contador personal inteligente**
 
-Lucas es tu contador personal. Se conecta con tu banco para ayudarte a entender tu dinero y tomar mejores decisiones financieras. 
-  
+Lucas es tu contador personal. Se conecta con tu banco para ayudarte a entender tu dinero y tomar mejores decisiones financieras.
+
+## 📱 Importante - Uso Móvil
+
+> **Lucas está optimizado para dispositivos móviles.** Para disfrutar de todas las funcionalidades y la mejor experiencia de usuario, te recomendamos usar la aplicación desde tu teléfono móvil o redimensionar tu navegador a tamaño móvil (aproximadamente 375-430px de ancho).
+
 ## 🚀 Features
 
 - **Conexión bancaria automática** via Fintoc
@@ -23,8 +27,9 @@ Lucas es tu contador personal. Se conecta con tu banco para ayudarte a entender 
   
 ## 🌐 Links
 
-- **Client:** https://grupo-29-platanus-client.vercel.app
-- **Server:** [Por definir]
+- **Client:** [https://grupo-29-platanus-client.vercel.app](https://grupo-29-platanus-client.vercel.app)
+- **Server:** [https://platanus-grupo29-681510028004.us-central1.run.app](https://platanus-grupo29-681510028004.us-central1.run.app)
+- **AI Agent:** [https://agent.kenobi.dev](https://agent.kenobi.dev)
 
 ## 👥 Team
 
