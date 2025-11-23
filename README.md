@@ -20,7 +20,7 @@ Lucas es tu contador personal. Se conecta con tu banco para ayudarte a entender 
 **Frontend:** TypeScript & shadcn/ui
 
 **Backend:** FastAPI, Claude Agent SDK, Fintoc API, & Supabase
-
+  
 ## 🌐 Links
 
 - **Client:** [Por definir]

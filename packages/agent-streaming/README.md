@@ -125,7 +125,7 @@ gcloud run deploy agent-streaming-server \
     --memory 2Gi \
     --min-instances 1 \
     --max-instances 10 \
-    --set-env-vars="ANTHROPIC_API_KEY=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,DATABASE_URL=postgresql://postgres:byqtez-feTqyz-9mubfu@db.lioyqtjrzclfcpdbonso.supabase.co:5432/postgres"
+    --set-env-vars="ANTHROPIC_API_KEY=YOUR_ANTHROPIC_API_KEY,DATABASE_URL=YOUR_DATABASE_URL"
 ```
 
 **Deployment Flags Explained:**

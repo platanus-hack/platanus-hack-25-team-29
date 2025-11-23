@@ -18,7 +18,7 @@ if __name__ == "__main__":
             model="claude-haiku-4-5",
             mcp_servers={"Tools": lucas_tools},
             permission_mode="bypassPermissions",
-            continue_conversation=True,
+            continue_conversation=False,
             allowed_tools=ALLOWED_TOOLS,
             system_prompt=SYSTEM_PROMPT,
         )
