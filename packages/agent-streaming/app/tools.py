@@ -165,21 +165,13 @@ class GetDateInput(BaseModel):
 )
 async def calculate(args: dict[str, Any]) -> dict[str, Any]:
     try:
-        # Validate inputs
-        validated = CalculateInput.model_validate(args)
-
         # Use a safe math evaluation library in production
-        result = eval(validated.expression, {"__builtins__": {}})
-        formatted = round(result, validated.precision)
+        result = eval(args["expression"], {"__builtins__": {}})
+        precision = args.get("precision", 2)
+        formatted = round(result, precision)
 
         return {
-            "content": [{"type": "text", "text": f"{validated.expression} = {formatted}"}]
-        }
-    except ValidationError as e:
-        return {
-            "content": [
-                {"type": "text", "text": f"Validation Error: {str(e)}"}
-            ]
+            "content": [{"type": "text", "text": f"{args['expression']} = {formatted}"}]
         }
     except Exception as e:
         return {
@@ -195,35 +187,30 @@ async def calculate(args: dict[str, Any]) -> dict[str, Any]:
     {"principal": float, "rate": float, "time": float, "n": int},
 )
 async def compound_interest(args: dict[str, Any]) -> dict[str, Any]:
-    try:
-        # Validate inputs
-        validated = CompoundInterestInput.model_validate(args)
+    principal = args["principal"]
+    rate = args["rate"]
+    time = args["time"]
+    n = args.get("n", 12)
 
-        amount = validated.principal * (1 + validated.rate / validated.n) ** (validated.n * validated.time)
-        interest = amount - validated.principal
+    amount = principal * (1 + rate / n) ** (n * time)
+    interest = amount - principal
 
-        return {
-            "content": [
-                {
-                    "type": "text",
-                    "text": f"""Investment Analysis:
-Principal: ${validated.principal:.2f}
-Rate: {validated.rate * 100:.2f}%
-Time: {validated.time} years
-Compounding: {validated.n} times per year
+    return {
+        "content": [
+            {
+                "type": "text",
+                "text": f"""Investment Analysis:
+Principal: ${principal:.2f}
+Rate: {rate * 100:.2f}%
+Time: {time} years
+Compounding: {n} times per year
 
 Final Amount: ${amount:.2f}
 Interest Earned: ${interest:.2f}
-Return: {(interest / validated.principal) * 100:.2f}%""",
-                }
-            ]
-        }
-    except ValidationError as e:
-        return {
-            "content": [
-                {"type": "text", "text": f"Validation Error: {str(e)}"}
-            ]
-        }
+Return: {(interest / principal) * 100:.2f}%""",
+            }
+        ]
+    }
 
 
 @tool(
@@ -235,16 +222,6 @@ async def get_accounts(args: dict[str, Any]) -> dict[str, Any]:
     """
     Retrieve the latest balance information for all accounts.
     """
-    try:
-        # Validate inputs (no parameters, but ensures structure)
-        GetAccountsInput.model_validate(args)
-    except ValidationError as e:
-        return {
-            "content": [
-                {"type": "text", "text": f"Validation Error: {str(e)}"}
-            ]
-        }
-
     session = SessionLocal()
     try:
         query = """
@@ -313,28 +290,18 @@ async def list_movements(args: dict[str, Any]) -> dict[str, Any]:
         since: Date using ISO 8601. Return only movements with transaction_date equal or after since (optional)
         until: Date using ISO 8601. Return only movements with transaction_date equal or before until (optional)
         search_term: Filter by description (e.g. "Uber", "Amazon") (optional)
-        per_page: Amount of movements per page. Defaults to 30. Maximum is 100 (optional)
+        per_page: Amount of movements per page. Defaults to 30. Maximum is 300 (optional)
         page: The page being retrieved. Starts from 1 (optional)
         confirmed_only: Show only confirmed movements. Defaults to true (optional)
     """
-    try:
-        # Validate inputs
-        validated = ListMovementsInput.model_validate(args)
-    except ValidationError as e:
-        return {
-            "content": [
-                {"type": "text", "text": f"Validation Error: {str(e)}"}
-            ]
-        }
-
     session = SessionLocal()
     try:
-        since = validated.since
-        until = validated.until
-        search_term = validated.search_term
-        per_page = validated.per_page
-        page = validated.page
-        confirmed_only = validated.confirmed_only
+        since = args.get("since")
+        until = args.get("until")
+        search_term = args.get("search_term")
+        per_page = args.get("per_page", 30)
+        page = args.get("page", 1)
+        confirmed_only = args.get("confirmed_only", True)
 
         print(f"Fetching movements from DB for all accounts")
         print(
@@ -435,25 +402,15 @@ async def aggregate_by_description(args: dict[str, Any]) -> dict[str, Any]:
         until: Date using ISO 8601. Return only movements with transaction_date equal or before until (optional)
         confirmed_only: Show only confirmed movements. Defaults to true (optional)
         min_count: Only show descriptions that appear at least this many times. Defaults to 1 (optional)
-        limit: Maximum number of results to return. Defaults to 50, max 200 (optional)
+        limit: Maximum number of results to return. Defaults to 50 (optional)
     """
-    try:
-        # Validate inputs
-        validated = AggregateByDescriptionInput.model_validate(args)
-    except ValidationError as e:
-        return {
-            "content": [
-                {"type": "text", "text": f"Validation Error: {str(e)}"}
-            ]
-        }
-
     session = SessionLocal()
     try:
-        since = validated.since
-        until = validated.until
-        confirmed_only = validated.confirmed_only
-        min_count = validated.min_count
-        limit = validated.limit
+        since = args.get("since")
+        until = args.get("until")
+        confirmed_only = args.get("confirmed_only", True)
+        min_count = args.get("min_count", 1)
+        limit = args.get("limit", 50)
 
         print(f"Aggregating movements by description")
         print(f"Filters: since={since}, until={until}, confirmed_only={confirmed_only}")
@@ -553,25 +510,15 @@ async def aggregate_transfers_by_holder(args: dict[str, Any]) -> dict[str, Any]:
         until: Date using ISO 8601. Return only movements with transaction_date equal or before until (optional)
         confirmed_only: Show only confirmed movements. Defaults to true (optional)
         min_count: Only show holders that appear at least this many times. Defaults to 1 (optional)
-        limit: Maximum number of results to return. Defaults to 50, max 200 (optional)
+        limit: Maximum number of results to return. Defaults to 50 (optional)
     """
-    try:
-        # Validate inputs
-        validated = AggregateTransfersByHolderInput.model_validate(args)
-    except ValidationError as e:
-        return {
-            "content": [
-                {"type": "text", "text": f"Validation Error: {str(e)}"}
-            ]
-        }
-
     session = SessionLocal()
     try:
-        since = validated.since
-        until = validated.until
-        confirmed_only = validated.confirmed_only
-        min_count = validated.min_count
-        limit = validated.limit
+        since = args.get("since")
+        until = args.get("until")
+        confirmed_only = args.get("confirmed_only", True)
+        min_count = args.get("min_count", 1)
+        limit = args.get("limit", 50)
 
         print(f"Aggregating transfers by holder name")
         print(f"Filters: since={since}, until={until}, confirmed_only={confirmed_only}")
@@ -668,21 +615,11 @@ async def aggregate_transfers_by_holder(args: dict[str, Any]) -> dict[str, Any]:
     },
 )
 async def summary_cashflow(args: dict[str, Any]) -> dict[str, Any]:
-    try:
-        # Validate inputs
-        validated = SummaryCashflowInput.model_validate(args)
-    except ValidationError as e:
-        return {
-            "content": [
-                {"type": "text", "text": f"Validation Error: {str(e)}"}
-            ]
-        }
-
     session = SessionLocal()
     try:
-        since = validated.since
-        until = validated.until
-        confirmed_only = validated.confirmed_only
+        since = args.get("since")
+        until = args.get("until")
+        confirmed_only = args.get("confirmed_only", True)
 
         query_parts = [
             """
@@ -763,19 +700,9 @@ async def execute_query(args: dict[str, Any]) -> dict[str, Any]:
     Execute a read-only SQL SELECT query against the database.
     Only SELECT queries are allowed. Data modification queries (INSERT, UPDATE, DELETE, etc.) are not permitted.
     """
-    try:
-        # Validate inputs
-        validated = ExecuteQueryInput.model_validate(args)
-    except ValidationError as e:
-        return {
-            "content": [
-                {"type": "text", "text": f"Validation Error: {str(e)}"}
-            ]
-        }
-
     session = SessionLocal()
     try:
-        query = validated.query
+        query = args["query"]
         print(f"\n{'='*60}")
         print(f"[{datetime.now().isoformat()}] Starting query execution")
         print(f"Query preview: {query[:200]}...")
@@ -866,16 +793,6 @@ async def get_movements_schema(args: dict[str, Any]) -> dict[str, Any]:
     """
     Get the column definitions for the movements table to understand the data structure.
     """
-    try:
-        # Validate inputs (no parameters, but ensures structure)
-        GetMovementsSchemaInput.model_validate(args)
-    except ValidationError as e:
-        return {
-            "content": [
-                {"type": "text", "text": f"Validation Error: {str(e)}"}
-            ]
-        }
-
     session = SessionLocal()
     try:
         # Query information_schema for columns
@@ -917,16 +834,6 @@ async def get_date(args: dict[str, Any]) -> dict[str, Any]:
     Get the current date and time in ISO 8601 format.
     Returns the current date and time which should be used for any date-based calculations.
     """
-    try:
-        # Validate inputs (no parameters, but ensures structure)
-        GetDateInput.model_validate(args)
-    except ValidationError as e:
-        return {
-            "content": [
-                {"type": "text", "text": f"Validation Error: {str(e)}"}
-            ]
-        }
-
     now = datetime.now()
     iso_date = now.strftime("%Y-%m-%d")
     iso_datetime = now.strftime("%Y-%m-%dT%H:%M:%S")

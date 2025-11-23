@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useRef, useEffect, useState, useCallback } from "react"
+import React, { useRef, useEffect, useState } from "react"
 import { useAppDispatch, useAppSelector } from "@/store/hooks"
 import {
   addMessage,
@@ -24,105 +24,22 @@ import {
   Bot,
   User,
   StopCircle,
-  Sparkles,
-  ArrowDown,
-  CheckCircle2,
-  Loader2,
-  Wrench // Generic tool icon
+  Sparkles
 } from "lucide-react"
 import ReactMarkdown from "react-markdown"
 import remarkGfm from "remark-gfm"
 
-// Config
-const AGENT_API_URL = process.env.NEXT_PUBLIC_AGENT_API_URL || process.env.NEXT_PUBLIC_API_URL || 'https://platanus-grupo29-681510028004.us-central1.run.app'
+// Enhanced tool components
+import { EnhancedToolCard } from "./enhanced-tool-card"
+import { InlineToolStatus } from "./inline-tool-status"
 
-// --- 1. Utilities ---
+// API Configuration
+// NEXT_PUBLIC_AGENT_API_URL: Dedicated agent streaming server URL
+// Falls back to NEXT_PUBLIC_API_URL for backward compatibility
+// Falls back to main server URL if neither is set
+const AGENT_API_URL = 'https://agent.kenobi.dev'
 
-/**
- * Formats technical tool names into human-readable labels.
- * e.g. "mcp__google__search" -> "Google Search"
- * e.g. "get_weather" -> "Get Weather"
- */
-const formatToolName = (rawName: string) => {
-  if (!rawName) return "Herramienta Desconocida";
-  
-  // 1. Remove common technical prefixes like 'mcp__'
-  let cleaned = rawName.replace(/^mcp__/, '');
-  
-  // 2. Split by underscores or double underscores
-  const words = cleaned.split(/[__|_]+/);
-  
-  // 3. Capitalize first letter of each word
-  return words.map(word => 
-    word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
-  ).join(' ');
-}
-
-// --- 2. Enhanced Tool Components (Clean & Minimal) ---
-
-/**
- * Renders a single tool execution row.
- * Purely visual: Status Icon + Clean Name + Time.
- * No raw inputs/JSON.
- */
-const ToolRow = ({ tool }: { tool: ToolUse }) => {
-  const isExecuting = tool.status === 'executing'
-  const displayName = formatToolName(tool.name)
-
-  return (
-    <div className="flex items-center justify-between py-2 px-3 border-b border-slate-50 last:border-0 bg-white first:rounded-t-lg last:rounded-b-lg">
-      <div className="flex items-center gap-3 overflow-hidden">
-        {/* Status Icon */}
-        <div className={`shrink-0 flex items-center justify-center w-6 h-6 rounded-full border 
-          ${isExecuting 
-            ? 'bg-blue-50 border-blue-100 text-blue-500' 
-            : 'bg-emerald-50 border-emerald-100 text-emerald-500'}`}>
-          {isExecuting ? (
-            <Loader2 size={12} className="animate-spin" />
-          ) : (
-            <CheckCircle2 size={12} />
-          )}
-        </div>
-        
-        {/* Clean Name */}
-        <span className={`text-xs font-medium truncate transition-colors
-          ${isExecuting ? 'text-slate-700' : 'text-slate-500'}`}>
-          {displayName}
-        </span>
-      </div>
-
-      {/* Duration / Status Text */}
-      <span className="text-[10px] text-slate-300 font-medium shrink-0 pl-2">
-        {isExecuting ? 'Procesando...' : `${tool.duration ? (tool.duration / 1000).toFixed(1) + 's' : 'Listo'}`}
-      </span>
-    </div>
-  )
-}
-
-/**
- * Groups multiple tools into a cohesive "Status Block".
- * Minimalist design: just a rounded container with rows.
- */
-const ToolChain = ({ tools }: { tools: ToolUse[] }) => {
-  if (!tools || tools.length === 0) return null;
-
-  return (
-    <motion.div 
-      initial={{ opacity: 0, y: -5 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="mb-4 w-full max-w-full"
-    >
-      <div className="bg-white border border-slate-100 rounded-xl shadow-sm overflow-hidden">
-        {tools.map((tool, i) => (
-          <ToolRow key={tool.id || i} tool={tool} />
-        ))}
-      </div>
-    </motion.div>
-  )
-}
-
-// --- 3. Standard UI Components ---
-
+// --- 1. Smooth Cursor ---
 const SmoothCursor = () => (
   <motion.span
     initial={{ opacity: 0 }}
@@ -161,6 +78,7 @@ const ThinkingBubble = () => (
   </motion.div>
 )
 
+// --- 3. Message Component (Responsive Layout Logic) ---
 const MessageBubble = ({
   msg,
   isLast,
