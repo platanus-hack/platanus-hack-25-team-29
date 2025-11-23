@@ -1,7 +1,7 @@
 # Lucas
 ## team-29 Platanus Hack Project
 
-<img src="./project-logo.png" alt="Lucas Logo" width="200" />
+<img src="https://grupo-29-platanus-client.vercel.app/project-logo.png" alt="Lucas Logo" width="200" />
 
 **Tu contador personal inteligente**
 
@@ -12,12 +12,12 @@ Lucas es tu contador personal. Se conecta con tu banco para ayudarte a entender 
 - **Conexión bancaria automática** via Fintoc
 - **Chat con IA** para analizar tus finanzas   
 - **Visualización de gastos** con gráficos interactivos
-- **Categorización inteligente** de transacciones 
+- **Categorización inteligente** de transacciones  
 - **Análisis de patrones** de consumo
 
 ## 🏗️ Tech Stack
 
-**Frontend:** TypeScript & shadcn/ui
+**Frontend:** Next.js, TypeScript & shadcn/ui
 
 **Backend:** FastAPI, Claude Agent SDK, Fintoc API, & Supabase
   
