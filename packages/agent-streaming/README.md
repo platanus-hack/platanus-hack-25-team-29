@@ -125,7 +125,7 @@ gcloud run deploy agent-streaming-server \
     --memory 2Gi \
     --min-instances 1 \
     --max-instances 10 \
-    --set-env-vars="ANTHROPIC_API_KEY=YOUR_ANTHROPIC_API_KEY,DATABASE_URL=YOUR_DATABASE_URL"
+    --set-env-vars="ANTHROPIC_API_KEY=<your-api-key-here>,DATABASE_URL=<your-database-url-here>"
 ```
 
 **Deployment Flags Explained:**
