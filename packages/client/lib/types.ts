@@ -17,3 +17,13 @@ export type Movement = {
   counterparty_type: string
   created_at: string
 }
+
+export type Account = {
+  id: string
+  name: string
+  account_number: string
+  balance_available: number
+  balance_current: number
+  currency: string
+  account_type: string
+}

@@ -2,21 +2,8 @@
 
 import React, { useRef, useEffect, useState, useCallback } from "react"
 import { useAppDispatch, useAppSelector } from "@/store/hooks"
-import {
-  addMessage,
-  updateLastMessage,
-  markLastMessageAsInterrupted,
-  clearAllMessages,
-  setInput,
-  clearInput,
-  setIsStreaming,
-  setToolActivity,
-  clearToolActivity,
-  resetChatUI,
-} from "@/store"
+import { addMessage, updateLastMessage, markLastMessageAsInterrupted, clearAllMessages, setInput, clearInput, setIsStreaming, setToolActivity, clearToolActivity, resetChatUI } from "@/store"
 import type { Message, ToolUse } from "@/store/types"
-
-// UI Libraries
 import { AnimatePresence, motion } from "framer-motion"
 import {
   Send,
@@ -29,8 +16,7 @@ import {
 } from "lucide-react"
 import ReactMarkdown from "react-markdown"
 import remarkGfm from "remark-gfm"
-
-// Enhanced tool components
+import Image from "next/image"
 import { EnhancedToolCard } from "./enhanced-tool-card"
 import { InlineToolStatus } from "./inline-tool-status"
 

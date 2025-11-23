@@ -10,15 +10,15 @@ import { getMonthlyFixedExpenses } from "@/lib/filterFixes"
 const chartConfig = {
   daily: {
     label: "Target Diario",
-    color: "var(--chart-1)",
+    color: "white",
   },
   accumulated: {
     label: "Gasto Acumulado",
-    color: "var(--chart-2)",
+    color: "white",
   },
   target: {
     label: "Target Acumulado",
-    color: "var(--chart-3)",
+    color: "white",
   },
 } satisfies ChartConfig
 
@@ -84,15 +84,15 @@ export function DailySpend({ movements }: { movements: Movement[] }) {
   const chartData = getCurrentMonthChartData(movements)
 
   return (
-    <Card>
+    <Card className="h-full w-full border-none bg-teal-600 text-white">
       <CardHeader>
         <CardTitle>Gasto Acumulado (mes actual)</CardTitle>
-        <CardDescription>
+        <CardDescription className="text-white">
           Comparación entre gasto real acumulado y objetivo mensual
         </CardDescription>
       </CardHeader>
-      <CardContent>
-        <ChartContainer config={chartConfig}>
+      <CardContent className="text-white min-h-50 pt-2">
+        <ChartContainer config={chartConfig} className="[&_.recharts-cartesian-axis-tick_text]:fill-background">
           <LineChart
             accessibilityLayer
             data={chartData}
@@ -101,19 +101,19 @@ export function DailySpend({ movements }: { movements: Movement[] }) {
               right: 12,
             }}
           >
-            <CartesianGrid vertical={false} />
+            <CartesianGrid vertical={false} stroke="white" />
             <XAxis
               dataKey="day"
               tickLine={false}
               axisLine={false}
               tickMargin={8}
               interval="preserveStartEnd"
-              tickFormatter={(value) => `${value}`}
             />
             <YAxis
+              height={300}
               tickLine={false}
               axisLine={false}
-              tickMargin={8}
+              tickMargin={4}
               tickFormatter={(value) => `$${(value / 1000).toLocaleString()}k`}
             />
             <ChartTooltip
@@ -123,6 +123,7 @@ export function DailySpend({ movements }: { movements: Movement[] }) {
                   labelKey="day"
                   labelFormatter={(value) => `Día ${value}`}
                   formatter={(value) => `$${Number(value).toLocaleString()}`}
+                  className="text-white gap-2"
                 />
               }
             />
@@ -130,7 +131,7 @@ export function DailySpend({ movements }: { movements: Movement[] }) {
               dataKey="target"
               type="linear"
               stroke="var(--color-target)"
-              strokeWidth={2}
+              strokeWidth={1}
               strokeDasharray="5 5"
               dot={false}
             />

@@ -58,6 +58,7 @@ export default function MovementsPage() {
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 20;
 
+    
     // Sync data from Fintoc
     const handleSync = async () => {
         try {

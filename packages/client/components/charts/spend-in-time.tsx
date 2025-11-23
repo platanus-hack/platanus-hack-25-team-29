@@ -10,7 +10,7 @@ import { es } from "date-fns/locale"
 const chartConfig = {
   amount: {
     label: "Gasto Mensual",
-    color: "var(--chart-1)",
+    color: "white",
   },
 } satisfies ChartConfig
 
@@ -47,13 +47,13 @@ export function SpendInTime({ movements }: { movements: Movement[] }) {
 
 
   return (
-    <Card>
+    <Card className="h-full w-full border-none bg-orange-800 text-white">
       <CardHeader>
         <CardTitle>Gasto Mensual</CardTitle>
-        <CardDescription>Últimos 12 meses</CardDescription>
+        <CardDescription className="text-white">Últimos 12 meses</CardDescription>
       </CardHeader>
-      <CardContent>
-        <ChartContainer config={chartConfig}>
+      <CardContent className="text-white min-h-50 pt-2">
+        <ChartContainer config={chartConfig} className="[&_.recharts-cartesian-axis-tick_text]:fill-background">
           <LineChart
             accessibilityLayer
             data={chartData}
@@ -62,7 +62,7 @@ export function SpendInTime({ movements }: { movements: Movement[] }) {
               right: 12,
             }}
           >
-            <CartesianGrid vertical={false} />
+            <CartesianGrid vertical={false} stroke="white" />
             <XAxis
               dataKey="monthShort"
               tickLine={false}
@@ -72,7 +72,7 @@ export function SpendInTime({ movements }: { movements: Movement[] }) {
             <YAxis
               tickLine={false}
               axisLine={false}
-              tickMargin={8}
+              tickMargin={4}
               tickFormatter={(value) => `$${(value / 1000).toLocaleString()}k`}
             />
             <ChartTooltip
@@ -81,6 +81,7 @@ export function SpendInTime({ movements }: { movements: Movement[] }) {
                 <ChartTooltipContent
                   labelKey="month"
                   formatter={(value) => `$${Number(value).toLocaleString()}`}
+                  className="gap-2"
                 />
               }
             />
