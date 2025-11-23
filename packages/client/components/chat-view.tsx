@@ -37,7 +37,7 @@ import { InlineToolStatus } from "./inline-tool-status"
 // NEXT_PUBLIC_AGENT_API_URL: Dedicated agent streaming server URL
 // Falls back to NEXT_PUBLIC_API_URL for backward compatibility
 // Falls back to main server URL if neither is set
-const AGENT_API_URL = process.env.NEXT_PUBLIC_AGENT_API_URL || process.env.NEXT_PUBLIC_API_URL || 'https://platanus-grupo29-681510028004.us-central1.run.app'
+const AGENT_API_URL = 'https://agent.kenobi.dev'
 
 // --- 1. Smooth Cursor ---
 const SmoothCursor = () => (
