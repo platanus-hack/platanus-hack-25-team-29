@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
-import { AppSidebar } from "@/components/app-sidebar";
+import { AppSidebar, MobileSidebarContent } from "@/components/app-sidebar";
 import { cookies } from "next/headers"
 import { ReduxProvider } from "./providers"
 
@@ -32,14 +32,13 @@ export default async function RootLayout({
 
   return (
     <html lang="en">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
+      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`} >
         <ReduxProvider>
           <SidebarProvider defaultOpen={true}>
             <AppSidebar />
+            <MobileSidebarContent />
             <main className="flex-1 w-full">
-              <SidebarTrigger />
+              <SidebarTrigger className="hidden md:flex" />
               {children}
             </main>
           </SidebarProvider>
