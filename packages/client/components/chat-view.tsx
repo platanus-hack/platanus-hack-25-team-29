@@ -195,6 +195,7 @@ export function ChatView() {
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const scrollContainerRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const hasAutoSentRef = useRef(false)
   const [showClearConfirm, setShowClearConfirm] = useState(false)
 
   // Auto-resize textarea
@@ -251,6 +252,9 @@ export function ChatView() {
 
   // Auto-trigger response when arriving from dashboard with pre-populated input
   useEffect(() => {
+    // Only auto-send once to prevent sending while user is typing
+    if (hasAutoSentRef.current) return
+
     // Only auto-send if:
     // 1. There's input from dashboard (input is populated)
     // 2. We're not currently streaming
@@ -261,6 +265,7 @@ export function ChatView() {
                            (messages.length === 0 || lastMessage?.role === 'assistant')
 
     if (shouldAutoSend) {
+      hasAutoSentRef.current = true
       // Small delay to ensure smooth transition from dashboard
       const timer = setTimeout(() => {
         sendMessage()
@@ -268,7 +273,7 @@ export function ChatView() {
 
       return () => clearTimeout(timer)
     }
-  }, [input, messages.length, isStreaming]) // Trigger when input changes (from dashboard)
+  }, [messages.length, isStreaming]) // Removed input to prevent triggering on every keystroke
 
   const handleClearChat = () => {
     if (showClearConfirm) {

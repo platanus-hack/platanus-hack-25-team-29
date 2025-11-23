@@ -204,7 +204,7 @@ export default function Dashboard({ movements = [], accounts = [] }: { movements
           </div>
 
           {/* Chart Card (Styled like the Green Widget) */}
-          <div className="w-full bg-gradient-to-br from-[#4FB2A3] to-[#3B8D83] rounded-3xl p-5 text-white shadow-xl overflow-hidden relative">
+          <div className="w-full bg-gradient-to-br from-[#4FB2A3] to-[#3B8D83] rounded-3xl p-5 pb-8 text-white shadow-xl overflow-hidden relative">
             <div className="flex justify-between items-start mb-2">
               <div>
                 <h3 className="text-teal-100 text-sm font-medium font-display">Ahorros Totales</h3>
