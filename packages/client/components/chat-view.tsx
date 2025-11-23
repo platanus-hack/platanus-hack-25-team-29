@@ -443,7 +443,7 @@ export function ChatView() {
       </AnimatePresence>
 
       {/* Input Area */}
-      <div className="fixed left-0 right-0 bottom-20 md:bottom-0 bg-slate-50/80 backdrop-blur-md z-40 border-t border-slate-200">
+      <div className="fixed left-0 right-0 bottom-15 md:bottom-0 bg-slate-50/80 backdrop-blur-md z-40 border-t border-slate-200">
         <div className="w-full max-w-3xl lg:max-w-4xl mx-auto px-4 py-3 md:py-6">
           <div className="relative flex items-end gap-2 bg-white border border-slate-300 rounded-[24px] p-1.5 shadow-sm focus-within:ring-2 focus-within:ring-teal-100 focus-within:border-teal-400 transition-all">
             <textarea
