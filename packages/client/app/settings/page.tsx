@@ -32,8 +32,8 @@ export default function SettingsPage() {
   };
 
   return (
-    <div className="p-10">
-      <h1 className="text-2xl font-bold mb-10">Settings</h1>
+    <div className="p-10 pb-28">
+      <h1 className="text-2xl font-bold mb-10 font-display">Settings</h1>
       <form onSubmit={handleSubmit} className="space-y-8 w-xs">
         <div>
           <Label htmlFor="budget" className="text-base font-semibold">

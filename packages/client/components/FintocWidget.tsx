@@ -320,13 +320,13 @@ const FintocWidget: React.FC<FintocWidgetProps> = ({
                     className="gap-2"
                 >
                     <Wallet className="h-4 w-4" />
-                    {isLoading ? 'Loading...' : 'Connect Bank Account'}
+                    {isLoading ? 'Loading...' : 'Conectar cuenta'}
                 </Button>
             </div>
 
             {error && (
                 <div className="flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800">
-                    <AlertCircle className="h-4 w-4 mt-0.5 flex-shrink-0" />
+                    <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
                     <p>{error}</p>
                 </div>
             )}
