@@ -26,11 +26,13 @@ interface BankAccount {
     name: string;
     institution_name?: string;
     holder_name?: string;
-    // Added fields for UI visualization (would come from API later)
-    type?: 'checking' | 'savings' | 'investment';
-    balance?: number;
+    account_type?: string;
+    balance_available?: number;  // Real field from Fintoc API
+    balance_current?: number;    // Real field from Fintoc API
+    balance_limit?: number;      // Real field from Fintoc API
     currency?: string;
     last4?: string;
+    account_number?: string;     // For extracting last4 digits
 }
 
 // --- Dummy Data for Visualization ---
@@ -98,15 +100,10 @@ export default function ConnectBankPage() {
 
                 if (fetchedAccounts.length > 0) {
                     setHasExistingConnection(true);
-                    // Merge real data with UI props. 
-                    // In a real scenario, you'd likely fetch balances here too.
-                    // For now, if we have real accounts, we use them, otherwise we default to empty or map them to dummy visuals.
-                    setAccounts(fetchedAccounts.map((acc: any, index: number) => ({
+                    // Use real data from API - extract last4 from account_number
+                    setAccounts(fetchedAccounts.map((acc: any) => ({
                         ...acc,
-                        // Fallback UI data for the prototype look
-                        balance: DUMMY_ACCOUNTS[index % DUMMY_ACCOUNTS.length]?.balance || 0,
-                        type: index % 2 === 0 ? 'checking' : 'savings',
-                        last4: Math.floor(1000 + Math.random() * 9000).toString()
+                        last4: acc.account_number?.slice(-4) || '0000'
                     })));
                 } else {
                     setHasExistingConnection(false);
@@ -171,7 +168,7 @@ export default function ConnectBankPage() {
     };
 
     // --- UI Helpers ---
-    const totalBalance = accounts.reduce((acc, curr) => acc + (curr.balance || 0), 0);
+    const totalBalance = accounts.reduce((acc, curr) => acc + (curr.balance_available || 0), 0);
 
     // Calculate monthly income and expenses from movements
     const getCurrentMonthRange = () => {
@@ -481,7 +478,7 @@ function BankCard({ account, index }: { account: BankAccount, index: number }) {
                             {account.holder_name}
                         </p>
                         <p className="text-xl font-bold">
-                            {formatCurrency(account.balance || 0)}
+                            {formatCurrency(account.balance_available || 0)}
                         </p>
                     </div>
                 </div>
