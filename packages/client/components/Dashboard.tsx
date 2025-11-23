@@ -37,6 +37,39 @@ export default function Dashboard({ movements = [], accounts = [] }: { movements
     [movements]
   )
 
+  // Calculate average monthly expense
+  const avgMonthlyExpense = useMemo(() => {
+    if (!movements || movements.length === 0) return 0
+
+    const monthlyTotals: Record<string, number> = {}
+
+    movements
+      .filter(m => m.amount < 0) // Only expenses
+      .forEach(m => {
+        if (!m.post_date) return
+        const monthKey = m.post_date.substring(0, 7) // "YYYY-MM"
+        monthlyTotals[monthKey] = (monthlyTotals[monthKey] || 0) + Math.abs(m.amount)
+      })
+
+    const monthCount = Object.keys(monthlyTotals).length
+    if (monthCount === 0) return 0
+
+    const total = Object.values(monthlyTotals).reduce((sum, val) => sum + val, 0)
+    return total / monthCount
+  }, [movements])
+
+  // Calculate current month spending
+  const currentMonthSpending = useMemo(() => {
+    if (!movements || movements.length === 0) return 0
+
+    const now = new Date()
+    const currentMonthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
+
+    return movements
+      .filter(m => m.amount < 0 && m.post_date && m.post_date.startsWith(currentMonthKey))
+      .reduce((sum, m) => sum + Math.abs(m.amount), 0)
+  }, [movements])
+
   // Memoize currency formatter to avoid recreating on every render
   const currencyFormatter = useMemo(() =>
     new Intl.NumberFormat('es-CL', { style: 'decimal' }),
@@ -88,6 +121,32 @@ export default function Dashboard({ movements = [], accounts = [] }: { movements
       })
     }
   }, [])
+
+  // Dynamic card data based on selected carousel slide
+  const dynamicCardData = useMemo(() => {
+    switch (selectedIndex) {
+      case 0: // SpendInTime chart
+        return {
+          title: "Promedio Mensual",
+          value: avgMonthlyExpense
+        }
+      case 1: // DailySpend chart
+        return {
+          title: "Gasto del Mes",
+          value: currentMonthSpending
+        }
+      case 2: // ByCategory chart
+        return {
+          title: "Total de Gastos",
+          value: Math.abs(totalExpenses)
+        }
+      default:
+        return {
+          title: "Promedio Mensual",
+          value: avgMonthlyExpense
+        }
+    }
+  }, [selectedIndex, avgMonthlyExpense, currentMonthSpending, totalExpenses])
 
   return (
     <div className="flex flex-col min-h-screen bg-gray-50">
@@ -187,7 +246,7 @@ export default function Dashboard({ movements = [], accounts = [] }: { movements
         {/* 2. Conversational Context */}
         <div className="px-6 -mt-4 space-y-6">
           {/* AI Response Bubble */}
-          <div className="bg-white rounded-2xl rounded-tl-none p-4 shadow-sm border border-gray-100 max-w-[85%] animate-in fade-in slide-in-from-bottom-4 duration-500">
+          <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 max-w-[85%] animate-in fade-in slide-in-from-bottom-4 duration-500">
             <p className="text-gray-600 text-sm leading-relaxed">
               Aquí está la tendencia de tus ahorros de los últimos 30 días:
             </p>
@@ -197,8 +256,8 @@ export default function Dashboard({ movements = [], accounts = [] }: { movements
           <div className="w-full bg-gradient-to-br from-[#4FB2A3] to-[#3B8D83] rounded-3xl p-5 pb-4 text-white shadow-xl overflow-hidden relative">
             <div className="flex justify-between items-start mb-2">
               <div>
-                <h3 className="text-teal-100 text-sm font-medium font-display">Ahorros Totales</h3>
-                <p className="text-3xl font-semibold mt-1">{formatCurrency(5200.00)}</p>
+                <h3 className="text-teal-100 text-sm font-medium font-display">{dynamicCardData.title}</h3>
+                <p className="text-3xl font-semibold mt-1">{formatCurrency(dynamicCardData.value)}</p>
               </div>
               <div className="flex gap-2">
                  <span className="text-[10px] bg-white/20 px-2 py-1 rounded-lg backdrop-blur-sm">Gráfico</span>

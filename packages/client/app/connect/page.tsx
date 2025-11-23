@@ -78,7 +78,7 @@ export default function ConnectBankPage() {
                 if (fetchedAccounts.length > 0) {
                     setHasExistingConnection(true);
                     // Use real data from API - extract last4 from account_number
-                    setAccounts(fetchedAccounts.map((acc: any) => ({
+                    setAccounts(fetchedAccounts.map((acc: BankAccount) => ({
                         ...acc,
                         last4: acc.account_number?.slice(-4) || '0000'
                     })));
@@ -137,8 +137,8 @@ export default function ConnectBankPage() {
             await checkExistingConnection();
             await fetchMovements(); // Also refresh movements after sync
 
-        } catch (err: any) {
-            setSyncError(err.message || 'Failed to sync data');
+        } catch (err: unknown) {
+            setSyncError(err instanceof Error ? err.message : 'Failed to sync data');
         } finally {
             setIsSyncing(false);
         }
