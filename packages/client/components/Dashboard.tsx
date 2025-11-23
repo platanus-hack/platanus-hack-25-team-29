@@ -197,7 +197,7 @@ export default function Dashboard({ movements = [], accounts = [] }: { movements
         {/* 2. Conversational Context */}
         <div className="px-6 -mt-4 space-y-6">
           {/* AI Response Bubble */}
-          <div className="bg-white rounded-2xl rounded-tl-none p-4 shadow-sm border border-gray-100 max-w-[85%] animate-in fade-in slide-in-from-bottom-4 duration-500">
+          <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 max-w-[85%] animate-in fade-in slide-in-from-bottom-4 duration-500">
             <p className="text-gray-600 text-sm leading-relaxed">
               Aquí está la tendencia de tus ahorros de los últimos 30 días:
             </p>
