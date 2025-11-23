@@ -4,21 +4,13 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
-import { AlertCircle, RefreshCw, Wallet, ArrowLeftRight } from 'lucide-react';
+import { RefreshCw, Wallet, ArrowLeftRight } from 'lucide-react';
 import { Empty, EmptyHeader, EmptyMedia, EmptyTitle, EmptyDescription, EmptyContent } from '@/components/ui/empty';
 import { MovementTable } from '@/components/movements/movement-table';
 import { SummaryStats } from '@/components/movements/summary-stats';
 import { SyncStatus } from '@/components/movements/sync-status';
 import { AccountFilter } from '@/components/movements/account-filter';
-import {
-    Pagination,
-    PaginationContent,
-    PaginationEllipsis,
-    PaginationItem,
-    PaginationLink,
-    PaginationNext,
-    PaginationPrevious,
-} from "@/components/ui/pagination";
+import { Pagination, PaginationContent, PaginationEllipsis, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
 
 const API_BASE_URL = 'https://platanus-grupo29-681510028004.us-central1.run.app';
 
@@ -66,6 +58,7 @@ export default function MovementsPage() {
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 20;
 
+    
     // Sync data from Fintoc
     const handleSync = async () => {
         try {
@@ -277,9 +270,9 @@ export default function MovementsPage() {
                                 <EmptyMedia variant="icon">
                                     <Wallet className="h-16 w-16" />
                                 </EmptyMedia>
-                                <EmptyTitle>No movements found</EmptyTitle>
+                                <EmptyTitle>No se encontraron transacciones</EmptyTitle>
                                 <EmptyDescription>
-                                    No transactions found. Click "Refresh" to update your transactions from your bank account.
+                                    No se encontraron transacciones. Haz click en <span className="font-bold">Refrescar</span> para actualizar tus transacciones desde tu cuenta bancaria.
                                 </EmptyDescription>
                             </EmptyHeader>
                             <EmptyContent>

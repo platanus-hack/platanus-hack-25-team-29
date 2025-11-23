@@ -24,10 +24,10 @@ export default async function DashboardPage() {
       <div className="w-full max-w-4xl">
         <h1 className="text-3xl font-semibold mb-4">Dashboard</h1>
         <div className="grid gap-4 grid-cols-2">
-          <SpendInTime movements={movements.movements as Movement[]} />
-          <DailySpend movements={movements.movements as Movement[]} />
-          <ByCategory movements={movements.movements as Movement[]} />
-          <FixedExpenses movements={movements.movements as Movement[]} />
+          <SpendInTime movements={movements as Movement[]} />
+          <DailySpend movements={movements as Movement[]} />
+          <ByCategory movements={movements as Movement[]} />
+          <FixedExpenses movements={movements as Movement[]} />
         </div>
       </div>
     </div>
