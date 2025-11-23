@@ -7,24 +7,20 @@ import { cn } from "@/lib/utils"
 
 const navItems = [
   {
-    title: "Inicio",
     url: "/dashboard",
-    icon: Home,
+    icon: Home
   },
   {
-    title: "Chat",
     url: "/chat",
-    icon: MessageCircle,
+    icon: MessageCircle
   },
   {
-    title: "Bancos",
     url: "/connect",
-    icon: Wallet,
+    icon: Wallet
   },
   {
-    title: "Cuenta",
     url: "/settings",
-    icon: User,
+    icon: User
   },
 ]
 
@@ -59,16 +55,7 @@ export function BottomNav() {
                   active && "bg-teal-50 dark:bg-teal-900/20"
                 )}>
                   <item.icon className="w-6 h-6" strokeWidth={active ? 2.5 : 2} />
-                  {active && (
-                    <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-teal-600 dark:bg-teal-400" />
-                  )}
                 </div>
-                <span className={cn(
-                  "text-xs font-medium transition-all duration-200",
-                  active ? "font-semibold" : "font-normal"
-                )}>
-                  {item.title}
-                </span>
               </Link>
             )
           })}
@@ -99,24 +86,6 @@ export function BottomNav() {
                     )}
                     strokeWidth={active ? 2.5 : 2}
                   />
-                  <span
-                    className={cn(
-                      "text-sm font-medium whitespace-nowrap transition-all duration-300",
-                      active
-                        ? "opacity-100 max-w-[100px]"
-                        : "opacity-0 max-w-0 group-hover:opacity-100 group-hover:max-w-[100px]"
-                    )}
-                  >
-                    {item.title}
-                  </span>
-
-                  {/* Tooltip for non-active items */}
-                  {!active && (
-                    <div className="absolute -top-12 left-1/2 -translate-x-1/2 px-3 py-1.5 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 text-xs font-medium rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap shadow-xl">
-                      {item.title}
-                      <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-px border-4 border-transparent border-t-zinc-900 dark:border-t-zinc-100" />
-                    </div>
-                  )}
                 </Link>
               )
             })}
@@ -125,7 +94,7 @@ export function BottomNav() {
       </nav>
 
       {/* Spacer for mobile to prevent content from being hidden behind nav */}
-      <div className="h-20 md:hidden" />
+      <div className="h-10 md:hidden" />
     </>
   )
 }
