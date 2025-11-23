@@ -114,9 +114,12 @@ def fetch_link_details(link_id: str, token: str) -> Dict[str, Any]:
 def upsert_link(session: Session, link_id: str, user_id: str, token: str):
     """
     Upsert link with full details from Fintoc API
+    Note: link_id parameter is ignored, we use token as the ID
     """
     # Fetch link details from Fintoc API
-    link_details = fetch_link_details(link_id, token)
+    # Extract just the link ID part for the API call
+    api_link_id = token.split("_token_")[0] if "_token_" in token else token
+    link_details = fetch_link_details(api_link_id, token)
     
     # Extract information from Fintoc response
     holder_id = link_details.get("holder_id", "unknown")
@@ -441,13 +444,14 @@ def sync_fintoc_data(
         link_id = token.split("_token_")[0] if "_token_" in token else token
         
         # Upsert the link with full details from Fintoc API
-        # Note: We save the full token as the ID in fintoc_links
-        upsert_link(session, link_id, user_id, token)
+        # IMPORTANT: Use the full token as the ID, not just link_id
+        upsert_link(session, link_id="UNUSED", user_id=user_id, token=token)
         
         total_movements = 0
         
         for account in accounts:
-            # Upsert Account - use full token as link_id
+            # Upsert Account - use full token as link_id to match fintoc_links.id
+            # CHANGE: This was already correct, but we need to ensure upsert_link saves the correct ID
             upsert_account(session, account, token, user_id)
             
             account_id = account.get("id")

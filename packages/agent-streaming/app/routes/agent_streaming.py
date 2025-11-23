@@ -6,9 +6,11 @@ from claude_agent_sdk.types import AssistantMessage, TextBlock, ToolUseBlock
 from typing import AsyncIterator
 import json
 import time
+import logging
 
 from app.tools import lucas_tools, SYSTEM_PROMPT, ALLOWED_TOOLS
 
+logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
@@ -26,7 +28,10 @@ class AgentResponse(BaseModel):
 async def agent_stream(prompt: str, system_prompt: str | None, max_turns: int) -> AsyncIterator[str]:
     """Generator that yields SSE formatted messages from Claude Agent"""
     try:
+        logger.info(f"Starting agent stream for prompt: {prompt[:50]}...")
+
         # Create agent options with shared tools
+        logger.info("Creating ClaudeAgentOptions...")
         options = ClaudeAgentOptions(
             model="claude-haiku-4-5",
             mcp_servers={"Tools": lucas_tools},
@@ -37,9 +42,13 @@ async def agent_stream(prompt: str, system_prompt: str | None, max_turns: int) -
         )
 
         # Use async context manager for proper connection handling
+        logger.info("Entering ClaudeSDKClient context...")
         async with ClaudeSDKClient(options=options) as client:
+            logger.info("ClaudeSDKClient initialized successfully")
             # Send the user's query
+            logger.info("Sending query to Claude...")
             await client.query(prompt)
+            logger.info("Query sent, starting to receive responses...")
 
             # Track last activity time for keepalive pings
             last_ping = time.time()
