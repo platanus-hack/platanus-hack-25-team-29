@@ -33,7 +33,7 @@ async def agent_stream(prompt: str, system_prompt: str | None, max_turns: int) -
         # Create agent options with shared tools
         logger.info("Creating ClaudeAgentOptions...")
         options = ClaudeAgentOptions(
-            model="claude-haiku-4-5",
+            model="claude-sonnet-4-5",
             mcp_servers={"Tools": lucas_tools},
             permission_mode="bypassPermissions",
             continue_conversation=True,
