@@ -23,7 +23,9 @@ class AgentResponse(BaseModel):
     error: str | None = None
 
 
-async def agent_stream(prompt: str, system_prompt: str | None, max_turns: int) -> AsyncIterator[str]:
+async def agent_stream(
+    prompt: str, system_prompt: str | None, max_turns: int
+) -> AsyncIterator[str]:
     """Generator that yields SSE formatted messages from Claude Agent"""
     try:
         # Create agent options with shared tools
@@ -31,7 +33,7 @@ async def agent_stream(prompt: str, system_prompt: str | None, max_turns: int) -
             model="claude-haiku-4-5",
             mcp_servers={"Tools": lucas_tools},
             permission_mode="bypassPermissions",
-            continue_conversation=True,
+            continue_conversation=False,
             allowed_tools=ALLOWED_TOOLS,
             system_prompt=system_prompt or SYSTEM_PROMPT,
         )
@@ -56,10 +58,7 @@ async def agent_stream(prompt: str, system_prompt: str | None, max_turns: int) -
                         for block in message.content:
                             if isinstance(block, TextBlock):
                                 # Stream text content
-                                event_data = {
-                                    "type": "text",
-                                    "content": block.text
-                                }
+                                event_data = {"type": "text", "content": block.text}
                                 yield f"data: {json.dumps(event_data)}\n\n"
                                 last_ping = time.time()  # Reset ping timer on activity
 
@@ -69,7 +68,7 @@ async def agent_stream(prompt: str, system_prompt: str | None, max_turns: int) -
                                     "type": "tool_use",
                                     "name": block.name,
                                     "input": block.input,
-                                    "id": block.id  # Include tool ID for tracking
+                                    "id": block.id,  # Include tool ID for tracking
                                 }
                                 yield f"data: {json.dumps(event_data)}\n\n"
                                 last_ping = time.time()  # Reset ping timer on activity
@@ -79,10 +78,7 @@ async def agent_stream(prompt: str, system_prompt: str | None, max_turns: int) -
 
     except Exception as e:
         # Send error event
-        error_event = {
-            "type": "error",
-            "message": str(e)
-        }
+        error_event = {"type": "error", "message": str(e)}
         yield f"data: {json.dumps(error_event)}\n\n"
 
 
@@ -95,8 +91,8 @@ async def agent_endpoint(request: AgentRequest):
         headers={
             "Cache-Control": "no-cache",
             "Connection": "keep-alive",
-            "X-Accel-Buffering": "no"  # Disable proxy buffering
-        }
+            "X-Accel-Buffering": "no",  # Disable proxy buffering
+        },
     )
 
 
@@ -104,14 +100,15 @@ async def agent_endpoint(request: AgentRequest):
 async def agent_complete_endpoint(request: AgentRequest):
     """Non-streaming endpoint that returns complete agent response"""
     messages = []
-    
+
     try:
         # Create agent options with shared tools
         options = ClaudeAgentOptions(
             model="claude-haiku-4-5",
             mcp_servers={"Tools": lucas_tools},
             permission_mode="bypassPermissions",
-            continue_conversation=True,
+            continue_conversation=False,
+            disable_parallel_tool_use=True,
             allowed_tools=ALLOWED_TOOLS,
             system_prompt=request.system_prompt or SYSTEM_PROMPT,
         )
@@ -128,19 +125,18 @@ async def agent_complete_endpoint(request: AgentRequest):
                         for block in message.content:
                             if isinstance(block, TextBlock):
                                 # Collect text content
-                                messages.append({
-                                    "type": "text",
-                                    "content": block.text
-                                })
+                                messages.append({"type": "text", "content": block.text})
 
                             elif isinstance(block, ToolUseBlock):
                                 # Collect tool usage information
-                                messages.append({
-                                    "type": "tool_use",
-                                    "name": block.name,
-                                    "input": block.input,
-                                    "id": block.id
-                                })
+                                messages.append(
+                                    {
+                                        "type": "tool_use",
+                                        "name": block.name,
+                                        "input": block.input,
+                                        "id": block.id,
+                                    }
+                                )
 
         return AgentResponse(messages=messages, error=None)
 
