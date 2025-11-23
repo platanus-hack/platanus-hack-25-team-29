@@ -10,7 +10,7 @@ Lucas es tu contador personal. Se conecta con tu banco para ayudarte a entender 
 ## 🚀 Features
 
 - **Conexión bancaria automática** via Fintoc
-- **Chat con IA** para analizar tus finanzas
+- **Chat con IA** para analizar tus finanzas   
 - **Visualización de gastos** con gráficos interactivos
 - **Categorización inteligente** de transacciones
 - **Análisis de patrones** de consumo
