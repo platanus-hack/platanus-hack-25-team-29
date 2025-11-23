@@ -78,7 +78,7 @@ function getCurrentMonthChartData(movements: Movement[], budget: number) {
 
 export const DailySpend = memo(function DailySpend({ movements, transparent = false }: { movements: Movement[], transparent?: boolean }) {
   // Move localStorage access to state with useEffect to avoid SSR issues
-  const [budget, setBudget] = useState(500000)
+  const [budget, setBudget] = useState(3000000)
 
   useEffect(() => {
     if (typeof window !== "undefined") {
