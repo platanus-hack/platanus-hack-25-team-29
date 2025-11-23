@@ -55,6 +55,14 @@ const DUMMY_ACCOUNTS: BankAccount[] = [
     }
 ];
 
+const formatCurrency = (amount: number) => {
+    const numberString = new Intl.NumberFormat('es-CL', {
+        style: 'decimal',
+    }).format(amount);
+
+    return <span className="font-display">${numberString}</span>;
+};
+
 export default function ConnectBankPage() {
     // --- State Management ---
     const [isSyncing, setIsSyncing] = useState(false);
@@ -136,16 +144,17 @@ export default function ConnectBankPage() {
     // --- UI Helpers ---
     const totalBalance = accounts.reduce((acc, curr) => acc + (curr.balance || 0), 0);
 
-    const formatCurrency = (amount: number) => {
-        return new Intl.NumberFormat('en-US', {
-            style: 'currency',
-            currency: 'USD',
-        }).format(amount);
-    };
-
     return (
-        <div className="min-h-screen bg-[#F2F4F6] dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 font-sans pb-28">
-            <main className="max-w-md mx-auto px-6 pt-8 space-y-8">
+        <div className="min-h-screen bg-[#F2F4F6] dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 font-sans pb-20">
+            
+            {/* Mobile Header */}
+            <header className="sticky top-0 z-10 bg-[#F2F4F6]/90 dark:bg-zinc-950/90 backdrop-blur-md px-6 py-6 flex items-center justify-center">
+                <h2 className="text-xl font-semibold font-display tracking-wide">
+                    Cuentas Bancarias
+                </h2>
+            </header>
+
+            <main className="max-w-md mx-auto px-6 pt-2 space-y-8">
                 {/* Section 1: Total Balance Card (Hero) */}
                 <section>
                     <div className="flex justify-between items-end mb-4">
@@ -172,18 +181,18 @@ export default function ConnectBankPage() {
                                     <div className="bg-zinc-50 dark:bg-zinc-800/50 p-4 rounded-2xl">
                                         <div className="flex items-center gap-2 mb-2">
                                             <div className="h-2 w-2 rounded-full bg-teal-500" />
-                                            <span className="text-xs font-semibold text-zinc-500 uppercase">Positions</span>
+                                            <span className="text-xs font-medium text-zinc-500 uppercase">Positions</span>
                                         </div>
-                                        <p className="text-lg font-bold text-zinc-800 dark:text-zinc-200">
+                                        <p className="text-lg font-medium text-zinc-800">
                                             {formatCurrency(totalBalance * 0.8)}
                                         </p>
                                     </div>
                                     <div className="bg-zinc-50 dark:bg-zinc-800/50 p-4 rounded-2xl">
                                         <div className="flex items-center gap-2 mb-2">
                                             <div className="h-2 w-2 rounded-full bg-orange-500" />
-                                            <span className="text-xs font-semibold text-zinc-500 uppercase">Cash</span>
+                                            <span className="text-xs font-medium text-zinc-500 uppercase">Cash</span>
                                         </div>
-                                        <p className="text-lg font-bold text-zinc-800 dark:text-zinc-200">
+                                        <p className="text-lg font-medium text-zinc-800">
                                             {formatCurrency(totalBalance * 0.2)}
                                         </p>
                                     </div>
@@ -369,7 +378,7 @@ function BankCard({ account, index }: { account: BankAccount, index: number }) {
                         <p className={cn("text-xs font-medium opacity-80 uppercase tracking-wider", isDark ? "text-white/70" : "text-zinc-500")}>
                             {account.institution_name || "Cuenta Bancaria"}
                         </p>
-                        <p className="text-sm font-semibold mt-0.5">{account.name}</p>
+                        <p className="text-sm font-semibold mt-0.5 ">{account.name}</p>
                     </div>
                     <CreditCard className={cn("h-6 w-6 opacity-50", isDark ? "text-white" : "text-zinc-900")} />
                 </div>
@@ -381,16 +390,16 @@ function BankCard({ account, index }: { account: BankAccount, index: number }) {
                 {/* Bottom Row */}
                 <div>
                     <div className="flex items-center gap-2 mb-1">
-                        <span className="text-2xl font-bold tracking-tight">
+                        <span className="text-2xl font-bold font-display tracking-wider">
                            **** {account.last4 || "0000"}
                         </span>
                     </div>
                     <div className="flex justify-between items-end">
-                        <p className={cn("text-xs opacity-70", isDark ? "text-white" : "text-zinc-500")}>
+                        <p className={cn("text-xs opacity-70 font-display", isDark ? "text-white" : "text-zinc-500")}>
                             {account.holder_name}
                         </p>
-                        <p className="text-lg font-bold">
-                            {new Intl.NumberFormat('en-US', { style: 'currency', currency: account.currency || 'USD' }).format(account.balance || 0)}
+                        <p className="text-xl font-bold">
+                            {formatCurrency(account.balance || 0)}
                         </p>
                     </div>
                 </div>
