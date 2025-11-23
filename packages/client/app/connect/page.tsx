@@ -12,7 +12,9 @@ import {
   Building2,
   ShieldCheck,
   ArrowUpCircle,
-  ArrowDownCircle
+  ArrowDownCircle,
+  TrendingDown,
+  ChevronRight
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -34,31 +36,6 @@ interface BankAccount {
     last4?: string;
     account_number?: string;     // For extracting last4 digits
 }
-
-// --- Dummy Data for Visualization ---
-// This mimics the data structure you'll eventually get, populated for the UI design
-const DUMMY_ACCOUNTS: BankAccount[] = [
-    { 
-        id: "1", 
-        name: "Main Checking", 
-        institution_name: "Banco de Chile", 
-        holder_name: "Ashik", 
-        type: "checking", 
-        balance: 2250.00, 
-        currency: "USD",
-        last4: "4521" 
-    },
-    { 
-        id: "2", 
-        name: "Savings Goal", 
-        institution_name: "Santander", 
-        holder_name: "Ashik", 
-        type: "savings", 
-        balance: 450.00, 
-        currency: "USD",
-        last4: "8832" 
-    }
-];
 
 const formatCurrency = (amount: number) => {
     const numberString = new Intl.NumberFormat('es-CL', {
@@ -329,6 +306,35 @@ export default function ConnectBankPage() {
                         )}
                     </div>
                 </section>
+
+                {/* 4. Transactions List (Visual Match) */}
+                <div className="py-4">
+                    <div className="flex justify-between items-center mb-4">
+                    <h3 className="font-semibold text-gray-900">Historial de transacciones</h3>
+                    <ChevronRight className="text-gray-400 size-5" />
+                    </div>
+                    
+                    <div className="space-y-4">
+                    {/* Rendering first 4 movements as a list */}
+                    {movements.slice(0, 8).map((mov, idx) => (
+                        <div key={idx} className="flex items-center justify-between p-1">
+                        <div className="flex items-center gap-4">
+                            <div className={`size-10 rounded-full flex items-center justify-center ${mov.amount > 0 ? 'bg-teal-100 text-teal-600' : 'bg-gray-100 text-gray-600'}`}>
+                            {/* Simple logic for icon based on amount */}
+                            {mov.amount > 0 ? <TrendingDown size={18} /> : <CreditCard size={18} />}
+                            </div>
+                            <div className="min-w-0 max-w-60 flex-1">
+                            <p className="font-semibold text-gray-900 truncate">{mov.description || "Transacción"}</p>
+                            <p className="text-xs text-gray-500">Hoy, 12:40 PM</p>
+                            </div>
+                        </div>
+                        <span className={`font-bold ${mov.amount > 0 ? 'text-teal-600' : 'text-rose-500'}`}>
+                            {mov.amount > 0 ? "+" : "-"} {formatCurrency(Math.abs(mov.amount))}
+                        </span>
+                        </div>
+                    ))}
+                    </div>
+                </div>
 
                 {/* Sync Status Toasts/Indicators */}
                 <AnimatePresence>

@@ -253,13 +253,13 @@ export default function Dashboard({ movements = [], accounts = [] }: { movements
                        {/* Simple logic for icon based on amount */}
                        {mov.amount > 0 ? <TrendingDown size={18} /> : <CreditCard size={18} />}
                     </div>
-                    <div>
-                      <p className="font-semibold text-gray-900">{mov.description || "Transacción"}</p>
+                    <div className="min-w-0 max-w-60 flex-1">
+                      <p className="font-semibold text-gray-900 truncate">{mov.description || "Transacción"}</p>
                       <p className="text-xs text-gray-500">Hoy, 12:40 PM</p>
                     </div>
                   </div>
                   <span className={`font-bold ${mov.amount > 0 ? 'text-teal-600' : 'text-rose-500'}`}>
-                    {mov.amount > 0 ? "+" : ""} {formatCurrency(Math.abs(mov.amount))}
+                    {mov.amount > 0 ? "+" : "-"} {formatCurrency(Math.abs(mov.amount))}
                   </span>
                 </div>
               ))}
