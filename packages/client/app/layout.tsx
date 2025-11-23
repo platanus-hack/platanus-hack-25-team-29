@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import { Titillium_Web } from "next/font/google";
-import "./globals.css";
-import { ReduxProvider } from "./providers"
 import { BottomNav } from "@/components/bottom-nav";
+import { ReduxProvider } from "./providers"
+import "./globals.css";
 
 const titilliumWeb = Titillium_Web({
   variable: "--font-titillium-web",
