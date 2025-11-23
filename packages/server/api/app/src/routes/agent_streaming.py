@@ -108,7 +108,6 @@ async def agent_complete_endpoint(request: AgentRequest):
             mcp_servers={"Tools": lucas_tools},
             permission_mode="bypassPermissions",
             continue_conversation=False,
-            disable_parallel_tool_use=True,
             allowed_tools=ALLOWED_TOOLS,
             system_prompt=request.system_prompt or SYSTEM_PROMPT,
         )
