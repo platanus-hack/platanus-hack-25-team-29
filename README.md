@@ -23,7 +23,7 @@ Lucas es tu contador personal. Se conecta con tu banco para ayudarte a entender 
   
 ## 🌐 Links
 
-- **Client:** [Por definir//]
+- **Client:** [Por definir]
 - **Server:** [Por definir]
 
 ## 👥 Team
