@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist, Geist_Mono, Titillium_Web } from "next/font/google";
 import "./globals.css";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar, MobileSidebarContent } from "@/components/app-sidebar";
@@ -14,6 +14,12 @@ const geistSans = Geist({
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
+});
+
+const titilliumWeb = Titillium_Web({
+  variable: "--font-titillium-web",
+  subsets: ["latin"],
+  weight: ["200", "300", "400", "600", "700", "900"],
 });
 
 export const metadata: Metadata = {
@@ -32,7 +38,7 @@ export default async function RootLayout({
 
   return (
     <html lang="en">
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`} >
+      <body className={`${geistSans.variable} ${geistMono.variable} ${titilliumWeb.variable} antialiased`} >
         <ReduxProvider>
           <SidebarProvider defaultOpen={true}>
             <AppSidebar />

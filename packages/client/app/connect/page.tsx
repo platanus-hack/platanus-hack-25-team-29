@@ -148,7 +148,7 @@ export default function ConnectBankPage() {
             
             {/* Mobile Header */}
             <header className="sticky top-0 z-10 bg-[#F2F4F6]/90 dark:bg-zinc-950/90 backdrop-blur-md px-6 py-6 flex items-center justify-center">
-                <h2 className="text-xl font-medium">
+                <h2 className="text-xl font-medium font-display">
                     Mis Cuentas
                 </h2>
             </header>
@@ -157,7 +157,7 @@ export default function ConnectBankPage() {
                 {/* Section 1: Total Balance Card (Hero) */}
                 <section>
                     <div className="flex justify-between items-end mb-4">
-                        <h3 className="text-lg font-medium text-zinc-400 dark:text-zinc-200">
+                        <h3 className="text-lg font-medium text-zinc-400 dark:text-zinc-200 font-display">
                             Saldo Total
                         </h3>
                     </div>
@@ -168,7 +168,7 @@ export default function ConnectBankPage() {
                         <div className="relative overflow-hidden">
                             <div className="relative z-10">
                                 <div className="w-full flex gap-3 items-center">
-                                    <h1 className="text-4xl font-medium text-zinc-900 dark:text-white tracking-tight">
+                                    <h1 className="text-4xl font-medium text-zinc-900 dark:text-white tracking-tight font-display">
                                         {hasExistingConnection ? formatCurrency(totalBalance) : '$0.00'}
                                     </h1>
                                     <span className="text-xs bg-green-600 text-white px-2 py-[6px] h-fit rounded-full font-medium flex items-center gap-1 tracking-wide">
@@ -207,7 +207,7 @@ export default function ConnectBankPage() {
                 {/* Section 2: Connected Banks List */}
                 <section>
                     <div className="flex justify-between items-center mb-4">
-                        <h3 className="text-lg font-semibold text-zinc-800 dark:text-zinc-200">Bancos Conectados</h3>
+                        <h3 className="text-lg font-semibold text-zinc-800 dark:text-zinc-200 font-display">Bancos Conectados</h3>
                         <Button 
                             variant="ghost" 
                             size="sm" 
@@ -318,7 +318,7 @@ export default function ConnectBankPage() {
                                 <div className="h-16 w-16 bg-teal-100 dark:bg-teal-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
                                     <Building2 className="h-8 w-8 text-teal-600 dark:text-teal-400" />
                                 </div>
-                                <h2 className="text-2xl font-bold text-zinc-900 dark:text-white">Conecta tus bancos</h2>
+                                <h2 className="text-2xl font-bold text-zinc-900 dark:text-white font-display">Conecta tus bancos</h2>
                                 <p className="text-zinc-500 mt-2">
                                     Conecta tu cuenta bancaria con Fintoc para obtener información financiera y recomendaciones personalizadas.
                                 </p>
@@ -413,7 +413,7 @@ function EmptyState({ onConnect }: { onConnect: () => void }) {
             <div className="h-14 w-14 bg-zinc-100 dark:bg-zinc-800 rounded-full flex items-center justify-center mb-4">
                 <Building2 className="h-7 w-7 text-zinc-400" />
             </div>
-            <h4 className="font-semibold text-zinc-900 dark:text-zinc-100">Sin cuentas conectadas</h4>
+            <h4 className="font-semibold text-zinc-900 dark:text-zinc-100 font-display">Sin cuentas conectadas</h4>
             <p className="text-sm text-zinc-500 max-w-[200px] mt-1 mb-6">
                 Conecta tus cuentas bancarias y sus movimientos
             </p>

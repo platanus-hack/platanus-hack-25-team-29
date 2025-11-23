@@ -406,7 +406,7 @@ export function ChatView() {
       {/* Header */}
       <div className="flex items-center justify-center py-6 bg-white/80 backdrop-blur-md border-slate-200 sticky top-0 w-full">
         <div className="flex items-center justify-center">
-          <span className="font-semibold text-slate-700">
+          <span className="font-semibold text-slate-700 font-display">
             Consultas Financieras
           </span>
         </div>
@@ -428,7 +428,7 @@ export function ChatView() {
               <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center mb-6 border border-slate-100">
                 <Bot className="text-blue-500 w-8 h-8" />
               </div>
-              <h2 className="text-xl font-semibold text-slate-800 mb-2">How can I help?</h2>
+              <h2 className="text-xl font-semibold text-slate-800 mb-2 font-display">How can I help?</h2>
               <p className="text-sm text-slate-500">I&apos;m ready to assist.</p>
             </div>
           )}

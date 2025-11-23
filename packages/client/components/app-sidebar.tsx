@@ -88,7 +88,7 @@ export function MobileSidebarContent() {
             <MenuIcon className="size-8 text-foreground" />
           </Button>
         </SheetTrigger>
-        <h1 className="text-xl font-semibold">
+        <h1 className="text-xl font-semibold font-display">
           {currentTitle}
         </h1>
       </div>

@@ -222,7 +222,7 @@ export default function MovementsPage() {
                         <ArrowLeftRight className="h-6 w-6 text-primary" />
                     </div>
                     <div>
-                        <h1 className="text-3xl font-bold tracking-tight">
+                        <h1 className="text-3xl font-bold tracking-tight font-display">
                             Movements
                         </h1>
                         <p className="text-sm text-muted-foreground mt-1">
@@ -361,7 +361,7 @@ export default function MovementsPage() {
             {/* Summary Statistics */}
             {filteredMovements.length > 0 && (
                 <div>
-                    <h2 className="text-2xl font-bold mb-4">Financial Summary</h2>
+                    <h2 className="text-2xl font-bold mb-4 font-display">Financial Summary</h2>
                     <SummaryStats movements={filteredMovements} />
                 </div>
             )}
