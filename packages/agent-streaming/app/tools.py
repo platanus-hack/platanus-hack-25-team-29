@@ -6,9 +6,10 @@ Contains all tool definitions and MCP server setup for financial assistant.
 import math
 import json
 from datetime import datetime
-from typing import Any
+from typing import Any, Optional
 
 from sqlalchemy import text
+from pydantic import BaseModel, Field, field_validator, ConfigDict, ValidationError
 
 from app.db import SessionLocal
 
@@ -17,6 +18,145 @@ from claude_agent_sdk import (
     create_sdk_mcp_server,
 )
 
+
+# ============================================================
+# Pydantic Input Validation Models
+# ============================================================
+
+class CalculateInput(BaseModel):
+    """Validation for calculate tool inputs."""
+    model_config = ConfigDict(extra="allow")
+
+    expression: str = Field(..., description="Mathematical expression to evaluate")
+    precision: Optional[int] = Field(default=2, ge=0, le=10, description="Decimal precision (0-10)")
+
+
+class CompoundInterestInput(BaseModel):
+    """Validation for compound_interest tool inputs."""
+    model_config = ConfigDict(extra="allow")
+
+    principal: float = Field(..., gt=0, description="Initial investment amount")
+    rate: float = Field(..., gt=0, lt=1, description="Annual interest rate (0-1, e.g., 0.05 for 5%)")
+    time: float = Field(..., gt=0, description="Time period in years")
+    n: Optional[int] = Field(default=12, gt=0, description="Compounding frequency per year")
+
+
+class GetAccountsInput(BaseModel):
+    """Validation for get_accounts tool inputs."""
+    model_config = ConfigDict(extra="allow")
+
+
+class ListMovementsInput(BaseModel):
+    """Validation for list_movements tool inputs."""
+    model_config = ConfigDict(extra="allow")
+
+    since: Optional[str] = Field(default=None, description="Start date in ISO 8601 format (YYYY-MM-DD)")
+    until: Optional[str] = Field(default=None, description="End date in ISO 8601 format (YYYY-MM-DD)")
+    search_term: Optional[str] = Field(default=None, description="Filter by description")
+    per_page: Optional[int] = Field(default=30, ge=1, le=100, description="Results per page (1-100)")
+    page: Optional[int] = Field(default=1, ge=1, description="Page number (starting from 1)")
+    confirmed_only: Optional[bool] = Field(default=True, description="Show only confirmed movements")
+
+    @field_validator('since', 'until')
+    @classmethod
+    def validate_iso_date(cls, v: Optional[str]) -> Optional[str]:
+        """Validate ISO 8601 date format."""
+        if v is None:
+            return v
+        try:
+            datetime.fromisoformat(v)
+            return v
+        except ValueError:
+            raise ValueError(f"Date must be in ISO 8601 format (YYYY-MM-DD), got: {v}")
+
+
+class AggregateByDescriptionInput(BaseModel):
+    """Validation for aggregate_by_description tool inputs."""
+    model_config = ConfigDict(extra="allow")
+
+    since: Optional[str] = Field(default=None, description="Start date in ISO 8601 format (YYYY-MM-DD)")
+    until: Optional[str] = Field(default=None, description="End date in ISO 8601 format (YYYY-MM-DD)")
+    confirmed_only: Optional[bool] = Field(default=True, description="Show only confirmed movements")
+    min_count: Optional[int] = Field(default=1, ge=1, description="Minimum occurrences to show")
+    limit: Optional[int] = Field(default=50, ge=1, le=200, description="Maximum results (1-200)")
+
+    @field_validator('since', 'until')
+    @classmethod
+    def validate_iso_date(cls, v: Optional[str]) -> Optional[str]:
+        """Validate ISO 8601 date format."""
+        if v is None:
+            return v
+        try:
+            datetime.fromisoformat(v)
+            return v
+        except ValueError:
+            raise ValueError(f"Date must be in ISO 8601 format (YYYY-MM-DD), got: {v}")
+
+
+class AggregateTransfersByHolderInput(BaseModel):
+    """Validation for aggregate_transfers_by_holder tool inputs."""
+    model_config = ConfigDict(extra="allow")
+
+    since: Optional[str] = Field(default=None, description="Start date in ISO 8601 format (YYYY-MM-DD)")
+    until: Optional[str] = Field(default=None, description="End date in ISO 8601 format (YYYY-MM-DD)")
+    confirmed_only: Optional[bool] = Field(default=True, description="Show only confirmed movements")
+    min_count: Optional[int] = Field(default=1, ge=1, description="Minimum occurrences to show")
+    limit: Optional[int] = Field(default=50, ge=1, le=200, description="Maximum results (1-200)")
+
+    @field_validator('since', 'until')
+    @classmethod
+    def validate_iso_date(cls, v: Optional[str]) -> Optional[str]:
+        """Validate ISO 8601 date format."""
+        if v is None:
+            return v
+        try:
+            datetime.fromisoformat(v)
+            return v
+        except ValueError:
+            raise ValueError(f"Date must be in ISO 8601 format (YYYY-MM-DD), got: {v}")
+
+
+class SummaryCashflowInput(BaseModel):
+    """Validation for summary_cashflow tool inputs."""
+    model_config = ConfigDict(extra="allow")
+
+    since: Optional[str] = Field(default=None, description="Start date in ISO 8601 format (YYYY-MM-DD)")
+    until: Optional[str] = Field(default=None, description="End date in ISO 8601 format (YYYY-MM-DD)")
+    confirmed_only: Optional[bool] = Field(default=True, description="Show only confirmed movements")
+
+    @field_validator('since', 'until')
+    @classmethod
+    def validate_iso_date(cls, v: Optional[str]) -> Optional[str]:
+        """Validate ISO 8601 date format."""
+        if v is None:
+            return v
+        try:
+            datetime.fromisoformat(v)
+            return v
+        except ValueError:
+            raise ValueError(f"Date must be in ISO 8601 format (YYYY-MM-DD), got: {v}")
+
+
+class ExecuteQueryInput(BaseModel):
+    """Validation for execute_query tool inputs."""
+    model_config = ConfigDict(extra="allow")
+
+    query: str = Field(..., min_length=1, description="SQL SELECT query to execute")
+
+
+class GetMovementsSchemaInput(BaseModel):
+    """Validation for get_movements_schema tool inputs."""
+    model_config = ConfigDict(extra="allow")
+
+
+class GetDateInput(BaseModel):
+    """Validation for get_date tool inputs."""
+    model_config = ConfigDict(extra="allow")
+
+
+# ============================================================
+# Tool Definitions
+# ============================================================
 
 @tool(
     "calculate",

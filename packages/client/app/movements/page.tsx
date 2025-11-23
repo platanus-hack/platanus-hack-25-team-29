@@ -58,7 +58,6 @@ export default function MovementsPage() {
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 20;
 
-    
     // Sync data from Fintoc
     const handleSync = async () => {
         try {
@@ -207,7 +206,7 @@ export default function MovementsPage() {
     };
 
     return (
-        <div className="container mx-auto p-6 space-y-6">
+        <div className="container mx-auto p-6 pb-28 space-y-6">
             {/* Header */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b pb-6">
                 <div className="flex items-center gap-3">
@@ -215,7 +214,7 @@ export default function MovementsPage() {
                         <ArrowLeftRight className="h-6 w-6 text-primary" />
                     </div>
                     <div>
-                        <h1 className="text-3xl font-bold tracking-tight">
+                        <h1 className="text-3xl font-bold tracking-tight font-display">
                             Movements
                         </h1>
                         <p className="text-sm text-muted-foreground mt-1">
@@ -354,7 +353,7 @@ export default function MovementsPage() {
             {/* Summary Statistics */}
             {filteredMovements.length > 0 && (
                 <div>
-                    <h2 className="text-2xl font-bold mb-4">Financial Summary</h2>
+                    <h2 className="text-2xl font-bold mb-4 font-display">Financial Summary</h2>
                     <SummaryStats movements={filteredMovements} />
                 </div>
             )}

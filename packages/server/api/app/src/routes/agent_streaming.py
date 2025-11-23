@@ -100,7 +100,6 @@ async def agent_endpoint(request: AgentRequest):
 async def agent_complete_endpoint(request: AgentRequest):
     """Non-streaming endpoint that returns complete agent response"""
     messages = []
-
     try:
         # Create agent options with shared tools
         options = ClaudeAgentOptions(

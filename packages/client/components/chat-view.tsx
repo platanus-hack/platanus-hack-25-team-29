@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useRef, useEffect, useState } from "react"
+import React, { useRef, useEffect, useState, useCallback } from "react"
 import { useAppDispatch, useAppSelector } from "@/store/hooks"
 import {
   addMessage,
@@ -24,7 +24,8 @@ import {
   Bot,
   User,
   StopCircle,
-  Sparkles
+  Sparkles,
+  ArrowDown,
 } from "lucide-react"
 import ReactMarkdown from "react-markdown"
 import remarkGfm from "remark-gfm"
@@ -32,6 +33,15 @@ import remarkGfm from "remark-gfm"
 // Enhanced tool components
 import { EnhancedToolCard } from "./enhanced-tool-card"
 import { InlineToolStatus } from "./inline-tool-status"
+
+// ToolChain component to display multiple tools
+const ToolChain = ({ tools }: { tools: ToolUse[] }) => (
+  <div className="mb-3 w-full">
+    {tools.map((tool, idx) => (
+      <EnhancedToolCard key={tool.id || idx} tool={tool} />
+    ))}
+  </div>
+)
 
 // API Configuration
 // NEXT_PUBLIC_AGENT_API_URL: Dedicated agent streaming server URL
@@ -46,11 +56,10 @@ const SmoothCursor = () => (
     animate={{ opacity: 1 }}
     exit={{ opacity: 0 }}
     transition={{ repeat: Infinity, duration: 0.5, repeatType: "reverse" }}
-    className="inline-block w-[3px] h-5 bg-blue-500 ml-1 align-bottom rounded-full"
+    className="inline-block w-[3px] h-5 bg-teal-500 ml-1 align-bottom rounded-full"
   />
 )
 
-// --- 2. Thinking Bubble (Immediate Feedback) ---
 const ThinkingBubble = () => (
   <motion.div
     initial={{ opacity: 0, y: 10 }}
@@ -58,29 +67,22 @@ const ThinkingBubble = () => (
     exit={{ opacity: 0, scale: 0.9 }}
     className="flex w-full justify-start mb-6"
   >
-    <div className="flex items-start max-w-[90%] md:max-w-[80%] gap-3">
-      <div className="flex-shrink-0 w-8 h-8 mt-1 rounded-full bg-white border border-gray-200 flex items-center justify-center text-purple-600 shadow-sm">
-        <Sparkles size={16} />
+    <div className="flex gap-3 max-w-[90%] md:max-w-[85%]">
+      <div className="shrink-0 w-8 h-8 rounded-full bg-white border border-gray-200 flex items-center justify-center">
+         <Sparkles size={16} className="text-teal-500" />
       </div>
-      <div className="px-4 py-3 bg-white border border-gray-100 rounded-2xl rounded-tl-sm shadow-sm flex items-center gap-3">
+      <div className="px-4 py-3 bg-white border border-gray-200 rounded-2xl rounded-tl-sm shadow-sm flex items-center gap-3">
         <span className="flex gap-1.5">
-          <motion.span 
-            animate={{ opacity: [0.4, 1, 0.4], scale: [1, 1.1, 1] }} 
-            transition={{ repeat: Infinity, duration: 1.2, delay: 0 }}
-            className="w-2 h-2 bg-blue-400 rounded-full" 
-          />
-          <motion.span 
-            animate={{ opacity: [0.4, 1, 0.4], scale: [1, 1.1, 1] }} 
-            transition={{ repeat: Infinity, duration: 1.2, delay: 0.2 }}
-            className="w-2 h-2 bg-blue-400 rounded-full" 
-          />
-          <motion.span 
-            animate={{ opacity: [0.4, 1, 0.4], scale: [1, 1.1, 1] }} 
-            transition={{ repeat: Infinity, duration: 1.2, delay: 0.4 }}
-            className="w-2 h-2 bg-blue-400 rounded-full" 
-          />
+          {[0, 0.2, 0.4].map((delay, i) => (
+            <motion.span 
+              key={i}
+              animate={{ opacity: [0.4, 1, 0.4], scale: [1, 1.1, 1] }} 
+              transition={{ repeat: Infinity, duration: 1.2, delay }}
+              className="w-1.5 h-1.5 bg-teal-500 rounded-full" 
+            />
+          ))}
         </span>
-        <span className="text-xs text-gray-500 font-medium uppercase tracking-wide">Processing</span>
+        <span className="text-xs text-gray-400 font-medium tracking-wide">Analizando solicitud</span>
       </div>
     </div>
   </motion.div>
@@ -98,113 +100,101 @@ const MessageBubble = ({
 }) => {
   const isUser = msg.role === 'user'
 
-  // Find currently executing tool for inline status
-  const executingTool = isLast && isStreaming && msg.toolUses
-    ? msg.toolUses.find(t => t.status === "executing")
-    : null
-
   return (
-    <>
-      {/* Inline tool status (ChatGPT/Claude style) for executing tools */}
-      {!isUser && executingTool && (
-        <AnimatePresence>
-          <InlineToolStatus tool={executingTool} />
-        </AnimatePresence>
-      )}
-
+    <div className={`flex flex-col w-full mb-6 ${isUser ? 'items-end' : 'items-start'}`}>
+      
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
-        className={`flex w-full mb-6 ${isUser ? 'justify-end' : 'justify-start'}`}
+        className={`flex w-full gap-3 ${isUser ? 'flex-row-reverse justify-start' : 'flex-row justify-start'}`}
       >
-        {/*
-           RESPONSIVE WIDTH LOGIC:
-           - max-w-[88%]: On mobile, bubble takes up most of the screen (avoiding thin columns).
-           - md:max-w-[80%]: On desktop, slightly restricted to keep distinct 'chat' feel.
-        */}
-        <div className={`flex max-w-[88%] md:max-w-[80%] gap-2 md:gap-3 ${isUser ? 'flex-row-reverse' : 'flex-row'}`}>
-
-          {/* Avatar - Hidden on very small screens for User to save space, optional */}
-          <div className={`flex-shrink-0 w-7 h-7 md:w-9 md:h-9 mt-0.5 rounded-full flex items-center justify-center shadow-sm transition-all
+        {/* Avatar */}
+        <div className="shrink-0 flex flex-col pt-1">
+          <div className={`w-8 h-8 rounded-full flex items-center justify-center shadow-sm border
             ${isUser
-              ? 'bg-blue-600 text-white'
-              : 'bg-white border border-gray-200 text-purple-600'
+              ? 'bg-[#5CB1A9] border-[#4a9c94] text-white'
+              : 'bg-white border-gray-200 text-teal-600'
             }`}>
-            {isUser ? <User size={15} className="md:w-5 md:h-5" /> : <Bot size={16} className="md:w-5 md:h-5" />}
+            {isUser ? <User size={16} /> : <Bot size={18} />}
+          </div>
+        </div>
+
+        {/* BUBBLE CONTENT */}
+        <div className={`flex flex-col min-w-0 max-w-[95%] md:max-w-[85%] lg:max-w-[80%]
+            ${isUser ? 'items-end' : 'items-start w-full'}`
+        }>
+          
+          {/* Name & Status */}
+          <div className="flex items-center gap-2 mb-1 px-1">
+            <span className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider">
+              {isUser ? 'Tú' : 'Lucas'}
+            </span>
+            {msg.interrupted && (
+              <span className="text-[10px] bg-orange-100 text-orange-700 px-1.5 py-0.5 rounded-md uppercase font-bold">
+                Interrumpido
+              </span>
+            )}
           </div>
 
-          <div className={`flex flex-col ${isUser ? 'items-end' : 'items-start'} w-full min-w-0`}>
-            {/* Name Label */}
-            <div className="flex items-baseline gap-2 mb-1 px-1">
-              <span className="text-xs font-medium text-gray-500 opacity-0 md:opacity-100 transition-opacity">
-                {isUser ? 'You' : 'Agent'}
-              </span>
-              {msg.interrupted && (
-                <span className="text-[10px] bg-orange-100 text-orange-700 px-1.5 py-0.5 rounded-md uppercase tracking-wider font-bold">
-                  Interrupted
-                </span>
-              )}
-            </div>
+          {/* 
+             Agent Logic: 
+             Render ToolChain above text. No debug prints.
+          */}
+          {!isUser && msg.toolUses && msg.toolUses.length > 0 && (
+            <ToolChain tools={msg.toolUses} />
+          )}
 
-            {/*
-               BUBBLE BODY STYLING
-               - Using break-words to ensure long URLs or strings don't break layout on mobile.
-            */}
-            <div className={`relative px-4 py-3 md:px-6 md:py-4 shadow-sm text-sm md:text-base leading-relaxed w-full break-words
-              ${isUser
-                ? 'bg-blue-600 text-white rounded-2xl rounded-tr-sm'
-                : 'bg-white border border-gray-200 text-gray-800 rounded-2xl rounded-tl-sm'
-              }`}>
+          {/* THE TEXT BUBBLE */}
+          <div className={`relative px-4 py-3 md:px-6 md:py-4 text-sm md:text-base leading-relaxed shadow-sm
+            ${isUser
+              ? 'bg-[#e0f5f3] border border-[#bce3de] text-slate-800 rounded-2xl rounded-tr-sm'
+              : 'bg-white border border-gray-200 text-slate-900 rounded-2xl rounded-tl-sm w-full overflow-hidden' 
+            }`}>
 
-              {/* Render Tools (Enhanced Cards) */}
-              {msg.toolUses && msg.toolUses.length > 0 && (
-                 <div className="mb-4 flex flex-col gap-2 w-full">
-                   {msg.toolUses.map((tool, i) => (
-                     <EnhancedToolCard key={tool.id || i} tool={tool} autoCollapse={true} />
-                   ))}
-                 </div>
-              )}
-
-              {/* Render Content */}
-              {isUser ? (
-                <div className="whitespace-pre-wrap">{msg.content}</div>
-              ) : (
-                <div className={`markdown-body w-full ${msg.content ? '' : 'min-h-[20px]'}`}>
-                  <ReactMarkdown
-                    remarkPlugins={[remarkGfm]}
-                    components={{
-                      p: ({children}) => <p className="mb-3 last:mb-0">{children}</p>,
-                      a: ({href, children}) => <a href={href} className="text-blue-500 hover:underline break-all" target="_blank">{children}</a>,
-                      // Code block styling
-                      code: ({className, children}) => {
-                        const isInline = !className;
-                        return isInline
-                          ? <code className="bg-gray-100 text-red-500 px-1 py-0.5 rounded font-mono text-xs md:text-sm border border-gray-200">{children}</code>
-                          : <code className="block bg-gray-900 text-gray-100 p-3 md:p-4 rounded-lg my-3 overflow-x-auto font-mono text-xs md:text-sm shadow-inner">{children}</code>
-                      },
-                      // Lists
-                      ul: ({children}) => <ul className="list-disc pl-4 md:pl-6 mb-2 space-y-1">{children}</ul>,
-                      ol: ({children}) => <ol className="list-decimal pl-4 md:pl-6 mb-2 space-y-1">{children}</ol>,
-                      // Tables (crucial for responsiveness)
-                      table: ({children}) => <div className="overflow-x-auto my-3 rounded-lg border border-gray-200"><table className="min-w-full divide-y divide-gray-200">{children}</table></div>,
-                      th: ({children}) => <th className="px-3 py-2 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{children}</th>,
-                      td: ({children}) => <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500 border-t border-gray-100">{children}</td>
-                    }}
-                  >
-                    {msg.content}
-                  </ReactMarkdown>
-                  {isLast && isStreaming && <SmoothCursor />}
-                </div>
-              )}
-            </div>
+            {/* Content */}
+            {isUser ? (
+              <div className="whitespace-pre-wrap break-words">{msg.content}</div>
+            ) : (
+              <div className={`markdown-body w-full ${msg.content ? '' : 'min-h-[20px]'}`}>
+                <ReactMarkdown
+                  remarkPlugins={[remarkGfm]}
+                  components={{
+                    h1: ({children}) => <h1 className="text-xl font-bold mb-3 mt-4 text-slate-800">{children}</h1>,
+                    h2: ({children}) => <h2 className="text-lg font-semibold mb-2 mt-4 text-slate-800">{children}</h2>,
+                    p: ({children}) => <p className="mb-3 last:mb-0 text-slate-700 leading-7">{children}</p>,
+                    a: ({href, children}) => <a href={href} className="text-teal-600 font-medium hover:underline break-all" target="_blank" rel="noreferrer">{children}</a>,
+                    code: ({className, children}) => {
+                      const isInline = !className;
+                      return isInline
+                        ? <code className="bg-slate-100 text-pink-600 px-1.5 py-0.5 rounded text-xs md:text-sm font-mono border border-slate-200">{children}</code>
+                        : <div className="w-full overflow-x-auto my-3 rounded-lg border border-slate-200 bg-slate-50">
+                            <code className="block p-3 min-w-full font-mono text-xs md:text-sm text-slate-800 whitespace-pre">{children}</code>
+                          </div>
+                    },
+                    ul: ({children}) => <ul className="list-disc pl-5 mb-3 space-y-1 text-slate-700">{children}</ul>,
+                    ol: ({children}) => <ol className="list-decimal pl-5 mb-3 space-y-1 text-slate-700">{children}</ol>,
+                    table: ({children}) => (
+                      <div className="w-full overflow-x-auto my-4 rounded-lg border border-gray-200 bg-white">
+                        <table className="min-w-full divide-y divide-gray-100 text-sm">{children}</table>
+                      </div>
+                    ),
+                    th: ({children}) => <th className="px-3 py-2 bg-gray-50 text-left font-semibold text-gray-600 whitespace-nowrap">{children}</th>,
+                    td: ({children}) => <td className="px-3 py-2 border-t border-gray-50 text-gray-600 min-w-[100px]">{children}</td>,
+                  }}
+                >
+                  {msg.content}
+                </ReactMarkdown>
+                {isLast && isStreaming && <SmoothCursor />}
+              </div>
+            )}
           </div>
         </div>
       </motion.div>
-    </>
+    </div>
   )
 }
 
-// --- Main Chat View ---
+// --- 4. Main Chat View ---
 
 export function ChatView() {
   const dispatch = useAppDispatch()
@@ -213,11 +203,15 @@ export function ChatView() {
   const isStreaming = useAppSelector((state) => state.chatUI.isStreaming)
   
   const [hasReceivedFirstToken, setHasReceivedFirstToken] = useState(false)
+  const [userScrolledUp, setUserScrolledUp] = useState(false)
+  const [showScrollButton, setShowScrollButton] = useState(false)
 
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const scrollContainerRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const [showClearConfirm, setShowClearConfirm] = useState(false)
 
+  // Auto-resize textarea
   useEffect(() => {
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto'
@@ -233,13 +227,42 @@ export function ChatView() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+  // --- Scrolling Logic ---
+  const scrollToBottom = useCallback((behavior: 'smooth' | 'auto' = 'smooth') => {
+    messagesEndRef.current?.scrollIntoView({ behavior, block: "end" })
+    setUserScrolledUp(false)
+    setShowScrollButton(false)
+  }, [])
+
+  const handleScroll = () => {
+    if (!scrollContainerRef.current) return
+    const { scrollTop, scrollHeight, clientHeight } = scrollContainerRef.current
+    const isAtBottom = scrollHeight - scrollTop - clientHeight < 100
+    
+    if (!isAtBottom) {
+      setUserScrolledUp(true)
+      setShowScrollButton(true)
+    } else {
+      setUserScrolledUp(false)
+      setShowScrollButton(false)
+    }
   }
 
+  // Auto-scroll effects
   useEffect(() => {
-    scrollToBottom()
-  }, [messages, isStreaming, hasReceivedFirstToken])
+    if (isStreaming && !userScrolledUp) {
+      scrollToBottom('smooth')
+    } else if (!isStreaming && !userScrolledUp) {
+      scrollToBottom('smooth')
+    }
+  }, [messages.length, isStreaming, userScrolledUp, scrollToBottom])
+
+  useEffect(() => {
+     if (isStreaming && hasReceivedFirstToken && !userScrolledUp) {
+         scrollToBottom('auto') 
+     }
+  }, [messages, isStreaming, hasReceivedFirstToken, userScrolledUp, scrollToBottom])
+
 
   const handleClearChat = () => {
     if (showClearConfirm) {
@@ -269,16 +292,17 @@ export function ChatView() {
     dispatch(setIsStreaming(true))
     dispatch(clearToolActivity())
     setHasReceivedFirstToken(false)
+    setUserScrolledUp(false)
 
     if (textareaRef.current) textareaRef.current.style.height = 'auto'
+    setTimeout(() => scrollToBottom(), 100)
 
     let currentAssistantMessage = ''
     let currentToolUses: ToolUse[] = []
     let assistantMessageCreated = false
 
-    // Create AbortController for request timeout/cancellation
     const controller = new AbortController()
-    const timeoutId = setTimeout(() => controller.abort(), 600000) // 10 minute timeout
+    const timeoutId = setTimeout(() => controller.abort(), 600000) 
 
     try {
       const response = await fetch(`${AGENT_API_URL}/api/agent`, {
@@ -292,10 +316,7 @@ export function ChatView() {
         signal: controller.signal
       })
 
-      // Check if response is OK before reading stream
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
-      }
+      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`)
 
       const reader = response.body?.getReader()
       const decoder = new TextDecoder()
@@ -314,16 +335,15 @@ export function ChatView() {
               setHasReceivedFirstToken(true); 
 
               if (parsed.type === "text") {
-                // Mark any executing tools as completed when text arrives (heuristic)
+                // Mark pending tools as completed if we start receiving text
                 currentToolUses = currentToolUses.map(tool => {
                   if (tool.status === "executing") {
-                    const duration = tool.timestamp ? Date.now() - tool.timestamp : undefined
-                    return { ...tool, status: "completed" as const, duration }
+                    return { ...tool, status: "completed" as const, duration: tool.timestamp ? Date.now() - tool.timestamp : undefined }
                   }
                   return tool
                 })
-
                 currentAssistantMessage += parsed.content
+                
                 if (assistantMessageCreated) {
                   dispatch(updateLastMessage({ content: currentAssistantMessage, toolUses: [...currentToolUses] }))
                 } else {
@@ -335,10 +355,11 @@ export function ChatView() {
                   name: parsed.name,
                   input: parsed.input,
                   id: parsed.id || `tool-${Date.now()}`,
-                  status: "executing", // Set status to executing when tool is first used
+                  status: "executing",
                   timestamp: Date.now()
                 };
                 currentToolUses.push(toolUse);
+                
                 if (!assistantMessageCreated) {
                     dispatch(addMessage({ role: 'assistant', content: '', toolUses: [...currentToolUses] }))
                     assistantMessageCreated = true
@@ -346,32 +367,14 @@ export function ChatView() {
                     dispatch(updateLastMessage({ content: currentAssistantMessage, toolUses: [...currentToolUses] }))
                 }
               } else if (parsed.type === "tool_complete") {
-                // Handle tool completion (when backend sends this event)
                 const toolIndex = currentToolUses.findIndex(t => t.id === parsed.id)
                 if (toolIndex !== -1) {
-                  const completedTool = currentToolUses[toolIndex]
-                  const duration = completedTool.timestamp ? Date.now() - completedTool.timestamp : undefined
-                  currentToolUses[toolIndex] = {
-                    ...completedTool,
-                    status: "completed",
-                    duration
+                  currentToolUses[toolIndex] = { 
+                    ...currentToolUses[toolIndex], 
+                    status: "completed", 
+                    duration: currentToolUses[toolIndex].timestamp ? Date.now() - currentToolUses[toolIndex].timestamp! : undefined 
                   }
                   dispatch(updateLastMessage({ content: currentAssistantMessage, toolUses: [...currentToolUses] }))
-                }
-              } else if (parsed.type === "error") {
-                // Handle tool errors
-                if (parsed.tool_id) {
-                  const toolIndex = currentToolUses.findIndex(t => t.id === parsed.tool_id)
-                  if (toolIndex !== -1) {
-                    currentToolUses[toolIndex] = {
-                      ...currentToolUses[toolIndex],
-                      status: "error",
-                      error: parsed.error
-                    }
-                    dispatch(updateLastMessage({ content: currentAssistantMessage, toolUses: [...currentToolUses] }))
-                  }
-                } else {
-                  dispatch(setToolActivity(`Error: ${parsed.error}`))
                 }
               }
             } catch (e) { console.error(e) }
@@ -379,21 +382,7 @@ export function ChatView() {
         }
       }
     } catch (e) {
-      // Handle different error types with specific messages
-      let errorMessage = 'Connection error. Please try again.'
-
-      if (e instanceof Error) {
-        if (e.name === 'AbortError') {
-          errorMessage = 'Request timed out after 10 minutes. Please try again with a simpler request.'
-        } else if (e.message.includes('HTTP error')) {
-          errorMessage = `Server error: ${e.message}. Please check your connection.`
-        } else if (e.message.includes('Failed to fetch')) {
-          errorMessage = 'Network error. Please check your internet connection.'
-        }
-      }
-
-      dispatch(addMessage({ role: 'assistant', content: errorMessage }))
-      console.error('Streaming error:', e)
+       dispatch(addMessage({ role: 'assistant', content: 'Lo siento, hubo un error de conexión.' }))
     } finally {
       clearTimeout(timeoutId)
       dispatch(setIsStreaming(false))
@@ -402,73 +391,109 @@ export function ChatView() {
   }
 
   return (
-    <div className="flex flex-col h-screen w-full bg-slate-50 font-sans text-slate-900">
+    <div className="flex flex-col h-[100dvh] w-full bg-slate-50 font-sans text-slate-900 relative">
       
       {/* Header */}
-      <div className="flex items-center justify-between px-4 md:px-8 py-4 bg-white/80 backdrop-blur-md border-b border-slate-200 sticky top-0">
-        <div className="flex items-center gap-2">
-          <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(34,197,94,0.6)]"></div>
-          <span className="font-semibold text-slate-700 ml-10 sm:ml-0">Chat con Lucas</span>
-        </div>
+      <div className="flex items-center justify-center py-4 bg-slate-50/90 backdrop-blur-sm z-10 sticky top-0 border-b border-slate-200/50">
+        <h2 className="text-lg font-bold text-slate-700 tracking-tight">
+          Asistente Financiero
+        </h2>
         <button
           onClick={handleClearChat}
-          className={`p-2 rounded-lg transition-all duration-200 flex items-center gap-2 text-xs md:text-sm font-medium
-            ${showClearConfirm ? 'bg-red-50 text-red-600 ring-1 ring-red-200' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-100'}`}
+          className={`absolute right-4 p-2 rounded-full hover:bg-red-50 text-slate-400 hover:text-red-500 transition-colors`}
         >
           <Trash2 size={18} />
         </button>
       </div>
 
-      {/* Messages Area - WIDER CONTAINER ON DESKTOP */}
-      <div className="flex-1 overflow-y-auto p-1 md:p-6 scroll-smooth">
-        <div className="w-full max-w-4xl lg:max-w-5xl mx-auto flex flex-col">
+      {/* Messages Area */}
+      <div 
+        ref={scrollContainerRef}
+        onScroll={handleScroll}
+        className="flex-1 overflow-y-auto scroll-smooth"
+      >
+        <div className="w-full max-w-3xl lg:max-w-4xl mx-auto px-3 md:px-6 pt-4 flex flex-col min-h-full">
           
           {messages.length === 0 && (
-            <div className="mt-24 flex flex-col items-center justify-center opacity-60 px-4 text-center">
-              <div className="w-16 h-16 bg-white rounded-2xl shadow-sm flex items-center justify-center mb-6 border border-slate-100">
-                <Bot className="text-blue-500 w-8 h-8" />
+            <div className="flex-1 flex flex-col items-center justify-center opacity-50 pb-20">
+              <div className="w-16 h-16 bg-white border border-slate-200 rounded-2xl flex items-center justify-center mb-4 shadow-sm">
+                <Bot className="text-teal-600 w-8 h-8" />
               </div>
-              <h2 className="text-xl font-semibold text-slate-800 mb-2">How can I help?</h2>
-              <p className="text-sm text-slate-500">I&apos;m ready to assist.</p>
+              <p className="text-slate-500 font-medium text-sm">¿Cómo puedo ayudarte con tus finanzas?</p>
             </div>
           )}
 
           {messages.map((msg, idx) => (
-            <MessageBubble key={idx} msg={msg} isLast={idx === messages.length - 1} isStreaming={isStreaming} />
+             <MessageBubble 
+                key={idx} 
+                msg={msg} 
+                isLast={idx === messages.length - 1} 
+                isStreaming={isStreaming} 
+             />
           ))}
 
           <AnimatePresence>
             {isStreaming && !hasReceivedFirstToken && <ThinkingBubble />}
           </AnimatePresence>
           
-          <div ref={messagesEndRef} className="h-4" />
+          <div ref={messagesEndRef} className="h-[160px] md:h-[120px]" />
         </div>
       </div>
 
-      {/* Input Area - MATCHING WIDTH */}
-      <div className="p-3 md:p-6 bg-white/80 backdrop-blur-md border-t border-slate-200">
-        <div className="w-full max-w-4xl lg:max-w-5xl mx-auto relative">
-          <div className="relative flex items-end gap-2 bg-slate-50 border border-slate-200 rounded-2xl p-2 shadow-sm focus-within:ring-2 focus-within:ring-blue-100 focus-within:border-blue-300 transition-all">
+      {/* Scroll to bottom floating button */}
+      <AnimatePresence>
+        {showScrollButton && (
+          <motion.button
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 10 }}
+            onClick={() => scrollToBottom()}
+            className="absolute bottom-44 md:bottom-28 left-1/2 -translate-x-1/2 bg-slate-800 text-white shadow-lg rounded-full p-2 z-30 flex items-center gap-2 px-4 text-xs font-medium hover:bg-slate-700 transition-colors"
+          >
+            <ArrowDown size={14} />
+            <span>Ver últimos mensajes</span>
+          </motion.button>
+        )}
+      </AnimatePresence>
+
+      {/* Input Area */}
+      <div className="fixed left-0 right-0 bottom-20 md:bottom-0 bg-slate-50/80 backdrop-blur-md z-40 border-t border-slate-200">
+        <div className="w-full max-w-3xl lg:max-w-4xl mx-auto px-4 py-3 md:py-6">
+          <div className="relative flex items-end gap-2 bg-white border border-slate-300 rounded-[24px] p-1.5 shadow-sm focus-within:ring-2 focus-within:ring-teal-100 focus-within:border-teal-400 transition-all">
             <textarea
               ref={textareaRef}
               value={input}
               onChange={(e) => dispatch(setInput(e.target.value))}
               onKeyDown={handleKeyDown}
-              placeholder="Message..."
+              placeholder="Escribe tu mensaje..."
               disabled={isStreaming}
-              className="flex-1 bg-transparent border-none focus:ring-0 p-3 min-h-[44px] max-h-[150px] resize-none text-slate-800 placeholder-slate-400 text-base"
+              className="flex-1 bg-transparent border-none outline-0 focus:ring-0 py-3 px-4 min-h-[44px] max-h-[140px] resize-none text-slate-800 placeholder-slate-400 text-base"
               rows={1}
             />
             <div className="pb-1 pr-1">
               {isStreaming ? (
-                 <button onClick={() => { dispatch(setIsStreaming(false)); dispatch(markLastMessageAsInterrupted()) }} className="p-2 bg-slate-200 text-slate-600 rounded-xl hover:bg-slate-300 transition-colors"><StopCircle size={20} /></button>
+                <button
+                  onClick={() => { dispatch(setIsStreaming(false)); dispatch(markLastMessageAsInterrupted()) }}
+                  className="p-2 bg-slate-100 text-slate-500 rounded-full hover:bg-slate-200 transition-colors"
+                >
+                  <StopCircle size={20} />
+                </button>
               ) : (
-                <button onClick={sendMessage} disabled={!input.trim()} className="p-2 bg-blue-600 text-white rounded-xl disabled:opacity-50 hover:bg-blue-700 shadow-sm transition-all hover:scale-105 active:scale-95"><Send size={20} /></button>
+                <button
+                  onClick={sendMessage}
+                  disabled={!input.trim()}
+                  className="p-3 bg-teal-600 text-white rounded-2xl disabled:opacity-50 disabled:bg-slate-200 hover:bg-teal-700 transition-all shadow-sm"
+                >
+                  <Send size={18} />
+                </button>
               )}
             </div>
           </div>
+          {/* Spacer */}
+          <div className="hidden md:block h-12" />
         </div>
       </div>
+
     </div>
   )
 }

@@ -35,10 +35,10 @@ async def agent_stream(
         # Create agent options with shared tools
         logger.info("Creating ClaudeAgentOptions...")
         options = ClaudeAgentOptions(
-            model="claude-haiku-4-5",
+            model="claude-sonnet-4-5",
             mcp_servers={"Tools": lucas_tools},
             permission_mode="bypassPermissions",
-            continue_conversation=False,
+            continue_conversation=True,
             allowed_tools=ALLOWED_TOOLS,
             system_prompt=system_prompt or SYSTEM_PROMPT,
         )
@@ -109,7 +109,6 @@ async def agent_endpoint(request: AgentRequest):
 async def agent_complete_endpoint(request: AgentRequest):
     """Non-streaming endpoint that returns complete agent response"""
     messages = []
-
     try:
         # Create agent options with shared tools
         options = ClaudeAgentOptions(
