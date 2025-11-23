@@ -170,7 +170,19 @@ export default function ConnectBankPage() {
     // --- UI Helpers ---
     const totalBalance = accounts.reduce((acc, curr) => acc + (curr.balance_available || 0), 0);
 
-    // Calculate monthly income and expenses from movements
+    // Calculate 30-day balance change
+    const get30DaysAgo = () => {
+        const date = new Date();
+        date.setDate(date.getDate() - 30);
+        return date.toISOString().split('T')[0]; // Format: YYYY-MM-DD
+    };
+
+    const thirtyDaysAgo = get30DaysAgo();
+
+    // Get movements from last 30 days
+    const last30DaysMovements = movements.filter(m => m.post_date >= thirtyDaysAgo);
+
+    // Calculate monthly income and expenses (for display cards)
     const getCurrentMonthRange = () => {
         const now = new Date();
         const year = now.getFullYear();
@@ -196,9 +208,12 @@ export default function ConnectBankPage() {
             .reduce((sum, m) => sum + m.amount, 0)
     );
 
-    // Calculate monthly net change and savings rate
-    const monthlyNetChange = monthlyIncome - monthlyExpenses;
-    const savingsRate = monthlyIncome > 0 ? (monthlyNetChange / monthlyIncome) * 100 : 0;
+    // Calculate 30-day balance change percentage
+    const last30DaysNetChange = last30DaysMovements.reduce((sum, m) => sum + m.amount, 0);
+    const balance30DaysAgo = totalBalance - last30DaysNetChange;
+    const balanceChangePercent = balance30DaysAgo !== 0
+        ? (last30DaysNetChange / balance30DaysAgo) * 100
+        : 0;
 
     return (
         <div className="min-h-screen bg-[#F2F4F6] dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 font-sans pb-20">
@@ -228,19 +243,19 @@ export default function ConnectBankPage() {
                                     <h1 className="text-4xl font-medium text-zinc-900 dark:text-white tracking-tight font-display">
                                         {hasExistingConnection ? formatCurrency(totalBalance) : '$0.00'}
                                     </h1>
-                                    {/* Savings Rate Badge */}
+                                    {/* 30-Day Balance Change Badge */}
                                     {isLoadingMovements ? (
                                         <div className="h-6 w-16 bg-zinc-200 dark:bg-zinc-700 rounded-full animate-pulse" />
-                                    ) : hasExistingConnection && monthlyIncome > 0 ? (
+                                    ) : hasExistingConnection && balance30DaysAgo !== 0 ? (
                                         <span className={cn(
                                             "text-xs px-2 py-[6px] h-fit rounded-full font-medium flex items-center gap-1 tracking-wide",
-                                            savingsRate > 0
+                                            balanceChangePercent > 0
                                                 ? "bg-emerald-600 text-white"
-                                                : savingsRate < 0
+                                                : balanceChangePercent < 0
                                                 ? "bg-red-600 text-white"
                                                 : "bg-zinc-400 text-white"
                                         )}>
-                                            {savingsRate > 0 ? '+' : ''}{savingsRate.toFixed(2)}%
+                                            {balanceChangePercent > 0 ? '+' : ''}{balanceChangePercent.toFixed(2)}%
                                         </span>
                                     ) : null}
                                 </div>
