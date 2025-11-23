@@ -97,7 +97,7 @@ export const DailySpend = memo(function DailySpend({ movements, transparent = fa
 
   return (
     <Card className={`h-full w-full border-none ${transparent ? 'bg-transparent shadow-none' : 'bg-teal-600'} text-white`}>
-      <CardHeader className={transparent ? 'px-2 py-2' : ''}>
+      <CardHeader className={transparent ? 'px-2 py-0' : ''}>
         <CardTitle>Gasto Acumulado (mes actual)</CardTitle>
         <CardDescription className="text-white">
           Comparación entre gasto real acumulado y objetivo mensual
