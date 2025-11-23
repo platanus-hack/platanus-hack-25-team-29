@@ -14,26 +14,31 @@ const items = [
     title: "Conectar banco",
     url: "/connect",
     icon: Wallet,
+    disabled: false
   },
   {
     title: "Chat",
     url: "/chat",
     icon: MessageCircle,
+    disabled: false
   },
   {
     title: "Dashboard",
     url: "/dashboard",
     icon: BarChart3,
+    disabled: false
   },
   {
     title: "Movements",
     url: "/movements",
     icon: ArrowLeftRight,
+    disabled: false
   },
   {
     title: "Settings",
     url: "/settings",
     icon: Cog,
+    disabled: true
   }
 ]
 
@@ -57,12 +62,19 @@ export function AppSidebar() {
           <SidebarMenu>
             {items.map((item) => (
               <SidebarMenuItem key={item.title}>
-                <SidebarMenuButton asChild className="pl-4">
-                  <Link href={item.url} className="w-full">
+                {item.disabled ? (
+                  <SidebarMenuButton className="pl-4">
                     <item.icon />
                     <span>{item.title}</span>
-                  </Link>
-                </SidebarMenuButton>
+                  </SidebarMenuButton>
+                ) : (
+                  <SidebarMenuButton asChild className="pl-4">
+                    <Link href={item.url} className="w-full">
+                      <item.icon />
+                      <span>{item.title}</span>
+                    </Link>
+                  </SidebarMenuButton>
+                )}
               </SidebarMenuItem>
             ))}
           </SidebarMenu>
@@ -98,12 +110,19 @@ export function MobileSidebarContent() {
         </SheetHeader>
         {
           items.map((item) => (
-            <SheetClose asChild key={item.title}>
-              <Link href={item.url} className="flex items-center gap-1 p-2 pl-4 hover:bg-accent rounded-md">
+            item.disabled ? (
+              <div key={item.title} className="flex items-center gap-1 p-2 pl-4 hover:bg-accent rounded-md">
                 <item.icon className="size-5 mr-2" />
                 {item.title}
-              </Link>
-            </SheetClose>
+              </div>
+            ) : (
+              <SheetClose asChild key={item.title}>
+                <Link href={item.url} className="flex items-center gap-1 p-2 pl-4 hover:bg-accent rounded-md">
+                  <item.icon className="size-5 mr-2" />
+                  {item.title}
+                </Link>
+              </SheetClose>
+            )
           ))
         }
       </SheetContent>
