@@ -11,7 +11,7 @@ import { usePathname } from "next/navigation";
 
 const items = [
   {
-    title: "Connect Bank Account",
+    title: "Conectar banco",
     url: "/connect",
     icon: Wallet,
   },
