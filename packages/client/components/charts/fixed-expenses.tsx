@@ -4,11 +4,22 @@ import { Table, TableHeader, TableBody, TableRow, TableCell, TableHead } from ".
 import { Movement } from "@/lib/types"
 import { getMonthlyFixedExpenses } from "@/lib/filterFixes"
 import { ScrollArea } from "../ui/scroll-area"
+import { memo, useMemo } from "react"
 
 
 
-export function FixedExpenses({ movements }: { movements: Movement[] }) {
-  const fixedExpenses = getMonthlyFixedExpenses({movements, getFixes: true})
+export const FixedExpenses = memo(function FixedExpenses({ movements }: { movements: Movement[] }) {
+  // Memoize expensive fixed expenses calculation
+  const fixedExpenses = useMemo(() =>
+    getMonthlyFixedExpenses({movements, getFixes: true}),
+    [movements]
+  )
+
+  // Memoize total calculation
+  const total = useMemo(() =>
+    fixedExpenses.reduce((acc, expense) => acc - expense.amount, 0),
+    [fixedExpenses]
+  )
   return (
     <Card className="bg-green-100 border-green-300 text-green-800 shadow-none sm:shadow-md w-full">
       <CardHeader className="-mb-4">
@@ -32,7 +43,7 @@ export function FixedExpenses({ movements }: { movements: Movement[] }) {
               ))}
               <TableRow>
                 <TableCell className="font-bold">Total</TableCell>
-                <TableCell className="font-bold text-right pr-4">$ {fixedExpenses.reduce((acc, expense) => acc - expense.amount, 0).toLocaleString()}</TableCell>
+                <TableCell className="font-bold text-right pr-4">$ {total.toLocaleString()}</TableCell>
               </TableRow>
             </TableBody>
           </Table>
@@ -40,4 +51,4 @@ export function FixedExpenses({ movements }: { movements: Movement[] }) {
       </CardContent>
     </Card>
   )
-}
+})

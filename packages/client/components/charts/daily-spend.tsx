@@ -6,6 +6,7 @@ import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from "
 import { Movement } from "@/lib/types"
 import { getDaysInMonth, startOfMonth, isSameMonth } from "date-fns"
 import { getMonthlyFixedExpenses } from "@/lib/filterFixes"
+import { memo, useMemo, useState, useEffect } from "react"
 
 const chartConfig = {
   daily: {
@@ -22,17 +23,12 @@ const chartConfig = {
   },
 } satisfies ChartConfig
 
-function getCurrentMonthChartData(movements: Movement[]) {
+function getCurrentMonthChartData(movements: Movement[], budget: number) {
   const today = new Date()
   const currentDay = today.getDate()
   const daysInMonth = getDaysInMonth(today)
   const startMonth = startOfMonth(today)
-  let budget = 500000
 
-  if (typeof window !== "undefined") {
-      const stored = localStorage.getItem("budget");
-      budget = stored ? Number(stored) : 500000;
-    }
   // Inicializar arrays para gastos diarios
   const dailySpend: Record<number, number> = {}
 
@@ -80,8 +76,24 @@ function getCurrentMonthChartData(movements: Movement[]) {
   return chartData
 }
 
-export function DailySpend({ movements }: { movements: Movement[] }) {
-  const chartData = getCurrentMonthChartData(movements)
+export const DailySpend = memo(function DailySpend({ movements }: { movements: Movement[] }) {
+  // Move localStorage access to state with useEffect to avoid SSR issues
+  const [budget, setBudget] = useState(500000)
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const stored = localStorage.getItem("budget")
+      if (stored) {
+        setBudget(Number(stored))
+      }
+    }
+  }, [])
+
+  // Memoize chart data to avoid expensive recalculation on every render
+  const chartData = useMemo(() =>
+    getCurrentMonthChartData(movements, budget),
+    [movements, budget]
+  )
 
   return (
     <Card className="h-full w-full border-none bg-teal-600 text-white">
@@ -147,5 +159,5 @@ export function DailySpend({ movements }: { movements: Movement[] }) {
       </CardContent>
     </Card>
   )
-}
+})
 

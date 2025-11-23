@@ -245,10 +245,30 @@ export function ChatView() {
 
   useEffect(() => {
      if (isStreaming && hasReceivedFirstToken && !userScrolledUp) {
-         scrollToBottom('auto') 
+         scrollToBottom('auto')
      }
   }, [messages, isStreaming, hasReceivedFirstToken, userScrolledUp, scrollToBottom])
 
+  // Auto-trigger response when arriving from dashboard with pre-populated input
+  useEffect(() => {
+    // Only auto-send if:
+    // 1. There's input from dashboard (input is populated)
+    // 2. We're not currently streaming
+    // 3. Chat is empty or last message is from assistant (not a pending user message)
+    const lastMessage = messages[messages.length - 1]
+    const shouldAutoSend = input.trim() &&
+                           !isStreaming &&
+                           (messages.length === 0 || lastMessage?.role === 'assistant')
+
+    if (shouldAutoSend) {
+      // Small delay to ensure smooth transition from dashboard
+      const timer = setTimeout(() => {
+        sendMessage()
+      }, 200)
+
+      return () => clearTimeout(timer)
+    }
+  }, [input, messages.length, isStreaming]) // Trigger when input changes (from dashboard)
 
   const handleClearChat = () => {
     if (showClearConfirm) {

@@ -1,52 +1,103 @@
 "use client"
 
 import { Account, Movement } from "@/lib/types"
-import { useState } from "react"
+import { useState, useMemo, useCallback } from "react"
+import { useRouter } from "next/navigation"
+import { useAppDispatch } from "@/store/hooks"
+import { setInput } from "@/store"
+import { motion, AnimatePresence } from "framer-motion"
 import { Carousel, CarouselContent, CarouselItem, CarouselApi } from "./ui/carousel"
 import { SpendInTime } from "./charts/spend-in-time"
 import { ByCategory } from "./charts/by-category"
 import { DailySpend } from "./charts/daily-spend"
 import { FixedExpenses } from "./charts/fixed-expenses"
-import { 
-  TrendingDown, 
-  TrendingUp, 
-  Send, 
-  Home, 
-  BarChart2, 
-  CreditCard, 
-  User, 
+import {
+  TrendingDown,
+  TrendingUp,
+  Send,
+  Home,
+  BarChart2,
+  CreditCard,
+  User,
   ChevronRight,
-  Search
+  Search,
+  Loader2
 } from "lucide-react"
 
 export default function Dashboard({ movements = [], accounts = [] }: { movements: Movement[], accounts: Account[] }) {
   const [selectedIndex, setSelectedIndex] = useState(0)
+  const [query, setQuery] = useState('')
+  const [isSending, setIsSending] = useState(false)
 
-  const totalBalance = (accounts || []).reduce((sum, account) => sum + (account.balance_current || 0), 0)
-  const totalIncome = (movements || []).filter((mov) => mov.amount > 0).reduce((sum, mov) => sum + (mov.amount || 0), 0)
-  const totalExpenses = (movements || []).filter((mov) => mov.amount < 0).reduce((sum, mov) => sum + (mov.amount || 0), 0)
+  const router = useRouter()
+  const dispatch = useAppDispatch()
 
-  const formatCurrency = (amount: number) => {
-    const numberString = new Intl.NumberFormat('es-CL', {
-      style: 'decimal',
-    }).format(amount);
+  // Memoize expensive calculations to avoid recomputing on every render
+  const totalBalance = useMemo(() =>
+    (accounts || []).reduce((sum, account) => sum + (account.balance_current || 0), 0),
+    [accounts]
+  )
+
+  const totalIncome = useMemo(() =>
+    (movements || []).filter((mov) => mov.amount > 0).reduce((sum, mov) => sum + (mov.amount || 0), 0),
+    [movements]
+  )
+
+  const totalExpenses = useMemo(() =>
+    (movements || []).filter((mov) => mov.amount < 0).reduce((sum, mov) => sum + (mov.amount || 0), 0),
+    [movements]
+  )
+
+  // Memoize currency formatter to avoid recreating on every render
+  const currencyFormatter = useMemo(() =>
+    new Intl.NumberFormat('es-CL', { style: 'decimal' }),
+    []
+  )
+
+  const formatCurrency = useCallback((amount: number) => {
+    const numberString = currencyFormatter.format(amount);
     return <span className="font-display">${numberString}</span>;
-  };
+  }, [currencyFormatter]);
 
-  // Mock carousel slides for the chart section inside the card
-  const slides = [
+  const handleSubmit = useCallback(async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+
+    if (!query.trim()) return;
+
+    // Show typing indicator
+    setIsSending(true);
+
+    // Set input in Redux store for chat to pick up
+    dispatch(setInput(query.trim()));
+
+    // Wait for animation
+    await new Promise(resolve => setTimeout(resolve, 300));
+
+    // Navigate to chat
+    router.push('/chat');
+  }, [query, dispatch, router]);
+
+  const handleKeyPress = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSubmit();
+    }
+  }, [handleSubmit]);
+
+  // Memoize slides to prevent unnecessary re-renders of chart components
+  const slides = useMemo(() => [
     <SpendInTime movements={movements} key="spend" />,
     <DailySpend movements={movements} key="daily" />,
-  ]
+  ], [movements])
 
-  const handleSetApi = (api: CarouselApi) => {
+  const handleSetApi = useCallback((api: CarouselApi) => {
     if (api) {
       setSelectedIndex(api.selectedScrollSnap())
       api.on("select", () => {
         setSelectedIndex(api.selectedScrollSnap())
       })
     }
-  }
+  }, [])
 
   return (
     <div className="flex flex-col min-h-screen bg-gray-50">
@@ -100,16 +151,47 @@ export default function Dashboard({ movements = [], accounts = [] }: { movements
           </h1>
           
           {/* Search Input */}
-          <div className="relative w-full">
+          <motion.div
+            className="relative w-full"
+            animate={isSending ? { scale: 0.98, opacity: 0.7 } : { scale: 1, opacity: 1 }}
+            transition={{ duration: 0.2 }}
+          >
             <input
               type="text"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              onKeyPress={handleKeyPress}
+              disabled={isSending}
               placeholder="ej., '¿Cuánto ahorré el mes pasado?'"
-              className="w-full pl-5 pr-12 py-4 rounded-full bg-white/95 text-sm text-gray-700 placeholder:text-gray-400 focus:outline-none shadow-md"
+              className="w-full pl-5 pr-12 py-4 rounded-full bg-white/95 text-sm text-gray-700 placeholder:text-gray-400 focus:outline-none shadow-md disabled:opacity-70 transition-opacity"
             />
-            <button className="absolute right-1.5 top-1 bg-[#3B8D83] hover:bg-[#2f726a] text-white p-3 rounded-full transition-colors">
-              <Send size={18} />
+            <button
+              onClick={handleSubmit}
+              disabled={isSending || !query.trim()}
+              className="absolute right-1.5 top-1 bg-[#3B8D83] hover:bg-[#2f726a] text-white p-3 rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isSending ? (
+                <Loader2 size={18} className="animate-spin" />
+              ) : (
+                <Send size={18} />
+              )}
             </button>
-          </div>
+          </motion.div>
+
+          {/* Typing Indicator */}
+          <AnimatePresence>
+            {isSending && (
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                className="mt-3 text-white text-sm flex items-center gap-2"
+              >
+                <Loader2 size={16} className="animate-spin" />
+                <span>Enviando...</span>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
 
         {/* 2. Conversational Context */}

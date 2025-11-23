@@ -5,20 +5,29 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
 import { Movement } from "@/lib/types"
 import { groupTransfersByDescription } from "@/lib/groupByDescription"
+import { memo, useMemo } from "react"
 
 
-export function ByCategory({ movements }: { movements: Movement[] }) {
-  let groupedTransfers = groupTransfersByDescription(movements)
-  groupedTransfers = groupedTransfers
-    .filter(group => group.totalAmount > 0)
-    .sort((a, b) => b.totalAmount - a.totalAmount)
-    .slice(0, 7)
-  const chartData = groupedTransfers.map(group => ({
-    category: group.description,
-    amount: group.totalAmount,
-    fill: "white",
-  }))
-  const chartConfig = {
+export const ByCategory = memo(function ByCategory({ movements }: { movements: Movement[] }) {
+  // Memoize expensive grouping and filtering operations
+  const groupedTransfers = useMemo(() => {
+    const grouped = groupTransfersByDescription(movements)
+    return grouped
+      .filter(group => group.totalAmount > 0)
+      .sort((a, b) => b.totalAmount - a.totalAmount)
+      .slice(0, 7)
+  }, [movements])
+
+  const chartData = useMemo(() =>
+    groupedTransfers.map(group => ({
+      category: group.description,
+      amount: group.totalAmount,
+      fill: "white",
+    })),
+    [groupedTransfers]
+  )
+
+  const chartConfig = useMemo(() => ({
     amount: {
       label: "Gasto",
     },
@@ -29,7 +38,7 @@ export function ByCategory({ movements }: { movements: Movement[] }) {
       }
       return acc
     }, {} as Record<string, { label: string; color: string }>),
-  } satisfies ChartConfig
+  } satisfies ChartConfig), [groupedTransfers])
   return (
     <Card className="h-full w-full border-none bg-amber-500 text-white">
       <CardHeader>
@@ -91,4 +100,4 @@ export function ByCategory({ movements }: { movements: Movement[] }) {
       </CardContent>
     </Card>
   )
-}
+})

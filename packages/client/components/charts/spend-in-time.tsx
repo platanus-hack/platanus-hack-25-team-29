@@ -6,6 +6,7 @@ import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from "
 import { Movement } from "@/lib/types"
 import { subMonths, format, startOfMonth } from "date-fns"
 import { es } from "date-fns/locale"
+import { memo, useMemo } from "react"
 
 const chartConfig = {
   amount: {
@@ -14,36 +15,43 @@ const chartConfig = {
   },
 } satisfies ChartConfig
 
-export function SpendInTime({ movements }: { movements: Movement[] }) {
-  // Generar los últimos 12 meses (del mes pasado hacia atrás 11 meses más)
-  const today = new Date()
-  const months: Date[] = []
-  
-  for (let i = 11; i >= 0; i--) {
-    months.push(startOfMonth(subMonths(today, i)))
-  }
+export const SpendInTime = memo(function SpendInTime({ movements }: { movements: Movement[] }) {
+  // Memoize months array to avoid recreation on every render
+  const months = useMemo(() => {
+    const today = new Date()
+    const monthsArray: Date[] = []
 
-  // Agrupar los movimientos por mes y sumar los gastos
-  const spendByMonth: Record<string, number> = {}
-
-  for (const mov of movements || []) {
-    if (!mov.post_date) continue
-    const dateObj = new Date(mov.post_date)
-    if (isNaN(dateObj.getTime())) continue
-    
-    // Solo considerar los gastos (amount < 0)
-    if (typeof mov.amount === 'number' && mov.amount < 0) {
-      const monthKey = format(dateObj, 'yyyy-MM')
-      spendByMonth[monthKey] = (spendByMonth[monthKey] || 0) + Math.abs(mov.amount)
+    for (let i = 11; i >= 0; i--) {
+      monthsArray.push(startOfMonth(subMonths(today, i)))
     }
-  }
 
-  // Formatear datos para la gráfica
-  const chartData = months.map((month) => ({
-    month: format(month, 'MMMM', { locale: es }),
-    monthShort: format(month, 'MMM', { locale: es }),
-    amount: spendByMonth[format(month, 'yyyy-MM')] || 0
-  }))
+    return monthsArray
+  }, [])
+
+  // Memoize chart data processing to avoid recomputing on every render
+  const chartData = useMemo(() => {
+    // Agrupar los movimientos por mes y sumar los gastos
+    const spendByMonth: Record<string, number> = {}
+
+    for (const mov of movements || []) {
+      if (!mov.post_date) continue
+      const dateObj = new Date(mov.post_date)
+      if (isNaN(dateObj.getTime())) continue
+
+      // Solo considerar los gastos (amount < 0)
+      if (typeof mov.amount === 'number' && mov.amount < 0) {
+        const monthKey = format(dateObj, 'yyyy-MM')
+        spendByMonth[monthKey] = (spendByMonth[monthKey] || 0) + Math.abs(mov.amount)
+      }
+    }
+
+    // Formatear datos para la gráfica
+    return months.map((month) => ({
+      month: format(month, 'MMMM', { locale: es }),
+      monthShort: format(month, 'MMM', { locale: es }),
+      amount: spendByMonth[format(month, 'yyyy-MM')] || 0
+    }))
+  }, [movements, months])
 
 
   return (
@@ -97,4 +105,4 @@ export function SpendInTime({ movements }: { movements: Movement[] }) {
       </CardContent>
     </Card>
   )
-}
+})
