@@ -149,7 +149,7 @@ export default function ConnectBankPage() {
             
             {/* Mobile Header */}
             <header className="bg-[#F2F4F6]/90 backdrop-blur-md px-6 py-6 mb-6 flex items-center justify-center">
-                <h2 className="text-xl font-semibold font-display tracking-wide">
+                <h2 className="text-xl font-semibold tracking-wide">
                     Cuentas Bancarias
                 </h2>
             </header>
@@ -208,7 +208,7 @@ export default function ConnectBankPage() {
                 {/* Section 2: Connected Banks List */}
                 <section>
                     <div className="flex justify-between items-center mb-4">
-                        <h3 className="text-lg font-semibold text-zinc-800 dark:text-zinc-200 font-display">Bancos Conectados</h3>
+                        <h3 className="text-lg font-semibold text-zinc-800 dark:text-zinc-200">Bancos Conectados</h3>
                         <Button 
                             variant="ghost" 
                             size="sm" 
@@ -319,7 +319,7 @@ export default function ConnectBankPage() {
                                 <div className="h-16 w-16 bg-teal-100 dark:bg-teal-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
                                     <Building2 className="h-8 w-8 text-teal-600 dark:text-teal-400" />
                                 </div>
-                                <h2 className="text-2xl font-bold text-zinc-900 dark:text-white font-display">Conecta tus bancos</h2>
+                                <h2 className="text-2xl font-bold text-zinc-900 dark:text-white">Conecta tus bancos</h2>
                                 <p className="text-zinc-500 mt-2">
                                     Conecta tu cuenta bancaria con Fintoc para obtener información financiera y recomendaciones personalizadas.
                                 </p>
@@ -395,7 +395,7 @@ function BankCard({ account, index }: { account: BankAccount, index: number }) {
                         </span>
                     </div>
                     <div className="flex justify-between items-end">
-                        <p className={cn("text-xs opacity-70 font-display", isDark ? "text-white" : "text-zinc-500")}>
+                        <p className={cn("text-xs opacity-70", isDark ? "text-white" : "text-zinc-500")}>
                             {account.holder_name}
                         </p>
                         <p className="text-xl font-bold">
@@ -414,7 +414,7 @@ function EmptyState({ onConnect }: { onConnect: () => void }) {
             <div className="h-14 w-14 bg-zinc-100 dark:bg-zinc-800 rounded-full flex items-center justify-center mb-4">
                 <Building2 className="h-7 w-7 text-zinc-400" />
             </div>
-            <h4 className="font-semibold text-zinc-900 dark:text-zinc-100 font-display">Sin cuentas conectadas</h4>
+            <h4 className="font-semibold text-zinc-900 dark:text-zinc-100">Sin cuentas conectadas</h4>
             <p className="text-sm text-zinc-500 max-w-[200px] mt-1 mb-6">
                 Conecta tus cuentas bancarias y sus movimientos
             </p>
