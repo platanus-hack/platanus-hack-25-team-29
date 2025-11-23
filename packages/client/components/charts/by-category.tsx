@@ -15,7 +15,7 @@ export const ByCategory = memo(function ByCategory({ movements, transparent = fa
     return grouped
       .filter(group => group.totalAmount > 0)
       .sort((a, b) => b.totalAmount - a.totalAmount)
-      .slice(0, 7)
+      .slice(0, 5)
   }, [movements])
 
   const chartData = useMemo(() =>

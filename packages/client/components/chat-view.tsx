@@ -5,20 +5,10 @@ import { useAppDispatch, useAppSelector } from "@/store/hooks"
 import { addMessage, updateLastMessage, markLastMessageAsInterrupted, clearAllMessages, setInput, clearInput, setIsStreaming, setToolActivity, clearToolActivity, resetChatUI } from "@/store"
 import type { Message, ToolUse } from "@/store/types"
 import { AnimatePresence, motion } from "framer-motion"
-import {
-  Send,
-  Trash2,
-  Bot,
-  User,
-  StopCircle,
-  Sparkles,
-  ArrowDown,
-} from "lucide-react"
+import { Send, Trash2, Bot, User, StopCircle, Sparkles, ArrowDown } from "lucide-react"
 import ReactMarkdown from "react-markdown"
 import remarkGfm from "remark-gfm"
-import Image from "next/image"
 import { EnhancedToolCard } from "./enhanced-tool-card"
-import { InlineToolStatus } from "./inline-tool-status"
 
 // ToolChain component to display multiple tools
 const ToolChain = ({ tools }: { tools: ToolUse[] }) => (

@@ -11,18 +11,7 @@ import { SpendInTime } from "./charts/spend-in-time"
 import { ByCategory } from "./charts/by-category"
 import { DailySpend } from "./charts/daily-spend"
 import { FixedExpenses } from "./charts/fixed-expenses"
-import {
-  TrendingDown,
-  TrendingUp,
-  Send,
-  Home,
-  BarChart2,
-  CreditCard,
-  User,
-  ChevronRight,
-  Search,
-  Loader2
-} from "lucide-react"
+import { TrendingDown, TrendingUp, Send, Home, BarChart2, CreditCard, User, ChevronRight, Loader2 } from "lucide-react"
 
 export default function Dashboard({ movements = [], accounts = [] }: { movements: Movement[], accounts: Account[] }) {
   const [selectedIndex, setSelectedIndex] = useState(0)
@@ -88,6 +77,7 @@ export default function Dashboard({ movements = [], accounts = [] }: { movements
   const slides = useMemo(() => [
     <SpendInTime movements={movements} transparent key="spend" />,
     <DailySpend movements={movements} transparent key="daily" />,
+    <ByCategory movements={movements} transparent key="by-category" />,
   ], [movements])
 
   const handleSetApi = useCallback((api: CarouselApi) => {
@@ -204,8 +194,8 @@ export default function Dashboard({ movements = [], accounts = [] }: { movements
           </div>
 
           {/* Chart Card (Styled like the Green Widget) */}
-          <div className="w-full bg-gradient-to-br from-[#4FB2A3] to-[#3B8D83] rounded-3xl p-4 pb-4 text-white shadow-xl overflow-hidden relative">
-            <div className="flex justify-between items-start mb-0">
+          <div className="w-full bg-gradient-to-br from-[#4FB2A3] to-[#3B8D83] rounded-3xl p-5 pb-4 text-white shadow-xl overflow-hidden relative">
+            <div className="flex justify-between items-start mb-2">
               <div>
                 <h3 className="text-teal-100 text-sm font-medium font-display">Ahorros Totales</h3>
                 <p className="text-3xl font-semibold mt-1">{formatCurrency(5200.00)}</p>
@@ -216,7 +206,7 @@ export default function Dashboard({ movements = [], accounts = [] }: { movements
             </div>
             
             {/* Chart Area */}
-            <div className="h-64 w-full mt-0 mb-14">
+            <div className="h-64 w-full -mt-4">
               <Carousel setApi={handleSetApi}>
                 <CarouselContent>
                   {slides.map((slide, i) => (
@@ -227,7 +217,7 @@ export default function Dashboard({ movements = [], accounts = [] }: { movements
             </div>
             
             {/* Pagination Dots for Card */}
-            <div className="flex justify-center gap-1 mt-2">
+            <div className="flex justify-center gap-1 mt-12">
               {slides.map((_, idx) => (
                 <div
                   key={idx}
