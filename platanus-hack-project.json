@@ -1,4 +1,5 @@
 {
     "project-name": "Lucas",
-    "project-description-spanish": "Lucas es tu contador personales. Se conecta con tu banco para ayudarte a entender tu dinero y tomar mejores decisiones financieras."
+    "project-description-spanish": "Lucas es tu agente financiero. Se conecta con tu banco para ayudarte a entender tus movimientos y tomar mejores decisiones financieras.",
+    "deploy-url": "https://grupo-29-platanus-client.vercel.app/"
 }
