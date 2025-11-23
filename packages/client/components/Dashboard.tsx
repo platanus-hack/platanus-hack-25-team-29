@@ -106,8 +106,8 @@ export default function Dashboard({ movements = [], accounts = [] }: { movements
               placeholder="ej., '¿Cuánto ahorré el mes pasado?'"
               className="w-full pl-5 pr-12 py-4 rounded-full bg-white/95 text-sm text-gray-700 placeholder:text-gray-400 focus:outline-none shadow-md"
             />
-            <button className="absolute right-2 top-2 bg-[#3B8D83] hover:bg-[#2f726a] text-white p-2 rounded-full transition-colors">
-              <Send size={18} className="ml-0.5" />
+            <button className="absolute right-1.5 top-1 bg-[#3B8D83] hover:bg-[#2f726a] text-white p-3 rounded-full transition-colors">
+              <Send size={18} />
             </button>
           </div>
         </div>
