@@ -247,8 +247,8 @@ export default function ConnectBankPage() {
                             <div className="flex items-center gap-3">
                                 <Loader2 className="h-5 w-5 animate-spin text-teal-500" />
                                 <div>
-                                    <p className="font-bold text-sm">Syncing Data...</p>
-                                    <p className="text-xs text-zinc-400 dark:text-zinc-500">Fetching transactions</p>
+                                    <p className="font-bold text-sm tracking-wide">Sincronizando datos...</p>
+                                    <p className="text-xs text-zinc-400 dark:text-zinc-500">Obteniendo transacciones</p>
                                 </div>
                             </div>
                         </motion.div>
@@ -267,9 +267,9 @@ export default function ConnectBankPage() {
                                     <CheckCircle2 className="h-5 w-5" />
                                 </div>
                                 <div>
-                                    <p className="font-bold text-sm">Sync Complete!</p>
+                                    <p className="font-bold text-sm tracking-wide">¡Sincronización exitosa!</p>
                                     <p className="text-xs text-emerald-100">
-                                        {syncResult.movements_synced} new transactions found.
+                                        {syncResult.movements_synced} movimientos cargados
                                     </p>
                                 </div>
                             </div>
@@ -375,7 +375,7 @@ function BankCard({ account, index }: { account: BankAccount, index: number }) {
                 <div className="flex justify-between items-start">
                     <div>
                         <p className={cn("text-xs font-medium opacity-80 uppercase tracking-wider", isDark ? "text-white/70" : "text-zinc-500")}>
-                            {account.institution_name || "Bank Account"}
+                            {account.institution_name || "Cuenta Bancaria"}
                         </p>
                         <p className="text-sm font-semibold mt-0.5">{account.name}</p>
                     </div>
@@ -383,8 +383,8 @@ function BankCard({ account, index }: { account: BankAccount, index: number }) {
                 </div>
 
                 {/* Middle Pattern (Decorative) */}
-                <div className="absolute right-[-20px] bottom-[-20px] h-32 w-32 rounded-full border-[20px] border-white/5" />
-                <div className="absolute left-[-20px] bottom-[40px] h-20 w-20 rounded-full border-[10px] border-white/5" />
+                <div className="absolute right-[-20px] bottom-[-20px] h-32 w-32 rounded-full border-20 border-white/5" />
+                <div className="absolute left-[-20px] bottom-[40px] h-20 w-20 rounded-full border-10 border-white/5" />
 
                 {/* Bottom Row */}
                 <div>
