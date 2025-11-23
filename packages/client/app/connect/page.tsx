@@ -3,17 +3,20 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import FintocWidget from "@/components/FintocWidget";
-import { 
-  Plus, 
-  CreditCard, 
-  Loader2, 
-  CheckCircle2, 
+import {
+  Plus,
+  CreditCard,
+  Loader2,
+  CheckCircle2,
   AlertCircle,
   Building2,
-  ShieldCheck
+  ShieldCheck,
+  ArrowUpCircle,
+  ArrowDownCircle
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import type { Movement } from "@/lib/types";
 
 const API_BASE_URL = 'https://platanus-grupo29-681510028004.us-central1.run.app';
 
@@ -68,15 +71,20 @@ export default function ConnectBankPage() {
     const [isSyncing, setIsSyncing] = useState(false);
     const [syncResult, setSyncResult] = useState<{ accounts_synced: number; movements_synced: number } | null>(null);
     const [syncError, setSyncError] = useState<string | null>(null);
-    
+
     const [isLoading, setIsLoading] = useState(true);
     const [hasExistingConnection, setHasExistingConnection] = useState(false);
     const [accounts, setAccounts] = useState<BankAccount[]>([]);
     const [isConnectModalOpen, setIsConnectModalOpen] = useState(false);
 
+    // Movements state for income/expenses calculation
+    const [movements, setMovements] = useState<Movement[]>([]);
+    const [isLoadingMovements, setIsLoadingMovements] = useState(true);
+
     // --- Effects ---
     useEffect(() => {
         checkExistingConnection();
+        fetchMovements();
     }, []);
 
     const checkExistingConnection = async () => {
@@ -115,6 +123,26 @@ export default function ConnectBankPage() {
         }
     };
 
+    const fetchMovements = async () => {
+        try {
+            setIsLoadingMovements(true);
+            const response = await fetch(`${API_BASE_URL}/fintoc/movements`);
+
+            if (response.ok) {
+                const data = await response.json();
+                const fetchedMovements = Array.isArray(data) ? data : (data.movements || []);
+                setMovements(fetchedMovements);
+            } else {
+                setMovements([]);
+            }
+        } catch (error) {
+            console.error('Error fetching movements:', error);
+            setMovements([]);
+        } finally {
+            setIsLoadingMovements(false);
+        }
+    };
+
     const handleBankConnected = async () => {
         try {
             setIsConnectModalOpen(false);
@@ -130,9 +158,10 @@ export default function ConnectBankPage() {
 
             const data = await response.json();
             setSyncResult(data);
-            
+
             // Refresh data
             await checkExistingConnection();
+            await fetchMovements(); // Also refresh movements after sync
 
         } catch (err: any) {
             setSyncError(err.message || 'Failed to sync data');
@@ -143,6 +172,32 @@ export default function ConnectBankPage() {
 
     // --- UI Helpers ---
     const totalBalance = accounts.reduce((acc, curr) => acc + (curr.balance || 0), 0);
+
+    // Calculate monthly income and expenses from movements
+    const getCurrentMonthRange = () => {
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const startDate = `${year}-${month}-01`;
+
+        // Get last day of current month
+        const lastDay = new Date(year, now.getMonth() + 1, 0).getDate();
+        const endDate = `${year}-${month}-${String(lastDay).padStart(2, '0')}`;
+
+        return { startDate, endDate };
+    };
+
+    const { startDate, endDate } = getCurrentMonthRange();
+
+    const monthlyIncome = movements
+        .filter(m => m.post_date >= startDate && m.post_date <= endDate && m.amount > 0)
+        .reduce((sum, m) => sum + m.amount, 0);
+
+    const monthlyExpenses = Math.abs(
+        movements
+            .filter(m => m.post_date >= startDate && m.post_date <= endDate && m.amount < 0)
+            .reduce((sum, m) => sum + m.amount, 0)
+    );
 
     return (
         <div className="min-h-screen bg-[#F2F4F6] dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 font-sans pb-20">
@@ -178,23 +233,34 @@ export default function ConnectBankPage() {
                                 </div>
                                 
                                 <div className="mt-8 grid grid-cols-2 gap-4">
+                                    {/* Monthly Income Card */}
                                     <div className="bg-zinc-50 dark:bg-zinc-800/50 p-4 rounded-2xl">
                                         <div className="flex items-center gap-2 mb-2">
-                                            <div className="h-2 w-2 rounded-full bg-teal-500" />
-                                            <span className="text-xs font-medium text-zinc-500 uppercase">Posiciones</span>
+                                            <ArrowUpCircle className="h-4 w-4 text-emerald-500" />
+                                            <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase">Ingresos del Mes</span>
                                         </div>
-                                        <p className="text-lg font-medium text-zinc-800">
-                                            {formatCurrency(totalBalance * 0.8)}
-                                        </p>
+                                        {isLoadingMovements ? (
+                                            <div className="h-7 w-24 bg-zinc-200 dark:bg-zinc-700 rounded animate-pulse" />
+                                        ) : (
+                                            <p className="text-lg font-medium text-zinc-800 dark:text-zinc-100">
+                                                {formatCurrency(monthlyIncome)}
+                                            </p>
+                                        )}
                                     </div>
+
+                                    {/* Monthly Expenses Card */}
                                     <div className="bg-zinc-50 dark:bg-zinc-800/50 p-4 rounded-2xl">
                                         <div className="flex items-center gap-2 mb-2">
-                                            <div className="h-2 w-2 rounded-full bg-orange-500" />
-                                            <span className="text-xs font-medium text-zinc-500 uppercase">Efectivo</span>
+                                            <ArrowDownCircle className="h-4 w-4 text-red-500" />
+                                            <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase">Egresos del Mes</span>
                                         </div>
-                                        <p className="text-lg font-medium text-zinc-800">
-                                            {formatCurrency(totalBalance * 0.2)}
-                                        </p>
+                                        {isLoadingMovements ? (
+                                            <div className="h-7 w-24 bg-zinc-200 dark:bg-zinc-700 rounded animate-pulse" />
+                                        ) : (
+                                            <p className="text-lg font-medium text-zinc-800 dark:text-zinc-100">
+                                                {formatCurrency(monthlyExpenses)}
+                                            </p>
+                                        )}
                                     </div>
                                 </div>
                             </div>
