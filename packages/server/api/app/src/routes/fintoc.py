@@ -43,10 +43,16 @@ def fetch_movements(account_id: str, link_token: str) -> List[Dict[str, Any]]:
     all_movements = []
     page = 1
     per_page = 300
+    max_movements = 500  # Limit total movements per account
     
-    print(f"Fetching movements for account: {account_id}")
+    print(f"Fetching movements for account: {account_id} (max: {max_movements})")
     
     while True:
+        # Stop if we've reached the limit
+        if len(all_movements) >= max_movements:
+            print(f"Reached maximum of {max_movements} movements, stopping...")
+            break
+            
         params = {"link_token": link_token, "page": page, "per_page": per_page}
         response = requests.get(url, headers=headers, params=params)
         
@@ -63,14 +69,19 @@ def fetch_movements(account_id: str, link_token: str) -> List[Dict[str, Any]]:
             
         if not page_movements:
             break
-            
-        all_movements.extend(page_movements)
         
-        if len(page_movements) < per_page:
+        # Add movements but respect the limit    
+        remaining_slots = max_movements - len(all_movements)
+        movements_to_add = page_movements[:remaining_slots]
+        all_movements.extend(movements_to_add)
+        
+        # Stop if we've filled all slots or if we got fewer movements than requested
+        if len(all_movements) >= max_movements or len(page_movements) < per_page:
             break
             
         page += 1
-        
+    
+    print(f"Fetched {len(all_movements)} movements for account {account_id}")
     return all_movements
 
 def get_or_create_user(session: Session) -> str:
@@ -363,6 +374,7 @@ def get_movements(
 ):
     """
     Get movements for a user, optionally filtered by account.
+    Limited to 500 most recent movements.
     """
     try:
         if not user_id:
@@ -373,6 +385,7 @@ def get_movements(
                 SELECT * FROM movements
                 WHERE user_id = :user_id AND account_id = :account_id
                 ORDER BY post_date DESC
+                LIMIT 500
             """)
             result = session.execute(query, {"user_id": user_id, "account_id": account_id})
         else:
@@ -380,6 +393,7 @@ def get_movements(
                 SELECT * FROM movements
                 WHERE user_id = :user_id
                 ORDER BY post_date DESC
+                LIMIT 500
             """)
             result = session.execute(query, {"user_id": user_id})
         
