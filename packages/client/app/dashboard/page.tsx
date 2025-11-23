@@ -22,7 +22,7 @@ export default async function DashboardPage() {
   return (
     <div className="flex min-h-screen items-center justify-center p-8">
       <div className="w-full max-w-4xl">
-        <h1 className="text-3xl font-semibold mb-4">Dashboard</h1>
+        <h1 className="text-3xl font-semibold mb-4 font-display">Dashboard</h1>
         <div className="grid gap-4 grid-cols-2">
           <SpendInTime movements={movements.movements as Movement[]} />
           <DailySpend movements={movements.movements as Movement[]} />

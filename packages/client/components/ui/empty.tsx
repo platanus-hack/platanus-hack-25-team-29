@@ -67,7 +67,7 @@ const EmptyTitle = React.forwardRef<
   <h3
     ref={ref}
     className={cn(
-      "text-xl font-semibold tracking-tight text-foreground",
+      "text-xl font-semibold tracking-tight text-foreground font-display",
       className
     )}
     {...props}
