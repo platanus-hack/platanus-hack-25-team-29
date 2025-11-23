@@ -56,7 +56,7 @@ export default function Dashboard({ movements, accounts }: { movements: Movement
          ===================================================================================== */}
       <div className="hidden md:grid grid-cols-11 gap-6 w-full max-w-7xl mx-auto p-8">
         <div className="col-span-11 mb-4">
-           <h1 className="text-3xl font-bold text-teal-800">Dashboard</h1>
+           <h1 className="text-3xl font-bold text-teal-800">Tablero</h1>
         </div>
 
         <div className="col-span-11 grid grid-cols-3 gap-6">
@@ -96,14 +96,14 @@ export default function Dashboard({ movements, accounts }: { movements: Movement
         {/* 1. AI Header Section */}
         <div className="bg-[#4FB2A3] px-6 pt-12 pb-10 rounded-b-[2.5rem] shadow-lg">
           <h1 className="text-3xl font-medium text-white leading-tight mb-6">
-            What would you like to <br/> know about your finances <br/> today?
+            ¿Qué te gustaría <br/> saber sobre tus finanzas <br/> hoy?
           </h1>
           
           {/* Search Input */}
           <div className="relative w-full">
-            <input 
-              type="text" 
-              placeholder="e.g., 'How much did I save last month?'"
+            <input
+              type="text"
+              placeholder="ej., '¿Cuánto ahorré el mes pasado?'"
               className="w-full pl-5 pr-12 py-4 rounded-full bg-white/95 text-sm text-gray-700 placeholder:text-gray-400 focus:outline-none shadow-md"
             />
             <button className="absolute right-2 top-2 bg-[#3B8D83] hover:bg-[#2f726a] text-white p-2 rounded-full transition-colors">
@@ -117,7 +117,7 @@ export default function Dashboard({ movements, accounts }: { movements: Movement
           {/* AI Response Bubble */}
           <div className="bg-white rounded-2xl rounded-tl-none p-4 shadow-sm border border-gray-100 max-w-[85%] animate-in fade-in slide-in-from-bottom-4 duration-500">
             <p className="text-gray-600 text-sm leading-relaxed">
-              Here is your savings trend for the last 30 days:
+              Aquí está la tendencia de tus ahorros de los últimos 30 días:
             </p>
           </div>
 
@@ -125,12 +125,12 @@ export default function Dashboard({ movements, accounts }: { movements: Movement
           <div className="w-full bg-gradient-to-br from-[#4FB2A3] to-[#3B8D83] rounded-3xl p-5 text-white shadow-xl overflow-hidden relative">
             <div className="flex justify-between items-start mb-2">
               <div>
-                <h3 className="text-teal-100 text-sm font-medium font-display">Total Savings</h3>
+                <h3 className="text-teal-100 text-sm font-medium font-display">Ahorros Totales</h3>
                 <p className="text-3xl font-semibold mt-1">{formatCurrency(5200.00)}</p>
               </div>
               <div className="flex gap-2">
-                 <span className="text-[10px] bg-white/20 px-2 py-1 rounded-lg backdrop-blur-sm">Chart</span>
-                 <span className="text-[10px] bg-white/10 px-2 py-1 rounded-lg backdrop-blur-sm">Table</span>
+                 <span className="text-[10px] bg-white/20 px-2 py-1 rounded-lg backdrop-blur-sm">Gráfico</span>
+                 <span className="text-[10px] bg-white/10 px-2 py-1 rounded-lg backdrop-blur-sm">Tabla</span>
               </div>
             </div>
             
@@ -164,7 +164,7 @@ export default function Dashboard({ movements, accounts }: { movements: Movement
 
           {/* 3. Total Balance Section */}
           <div className="pt-4">
-            <p className="text-gray-500 text-sm font-medium font-display">Total balance</p>
+            <p className="text-gray-500 text-sm font-medium font-display">Saldo total</p>
             <h2 className="text-4xl font-bold text-gray-900 mt-1">
               {formatCurrency(totalBalance)}
             </h2>
@@ -173,7 +173,7 @@ export default function Dashboard({ movements, accounts }: { movements: Movement
           {/* 4. Transactions List (Visual Match) */}
           <div className="pb-4">
             <div className="flex justify-between items-center mb-4">
-              <h3 className="font-semibold text-gray-900">Transactions history</h3>
+              <h3 className="font-semibold text-gray-900">Historial de transacciones</h3>
               <ChevronRight className="text-gray-400 size-5" />
             </div>
             
@@ -187,8 +187,8 @@ export default function Dashboard({ movements, accounts }: { movements: Movement
                        {mov.amount > 0 ? <TrendingDown size={18} /> : <CreditCard size={18} />}
                     </div>
                     <div>
-                      <p className="font-semibold text-gray-900">{mov.description || "Transaction"}</p>
-                      <p className="text-xs text-gray-500">Today, 12:40 PM</p>
+                      <p className="font-semibold text-gray-900">{mov.description || "Transacción"}</p>
+                      <p className="text-xs text-gray-500">Hoy, 12:40 PM</p>
                     </div>
                   </div>
                   <span className={`font-bold ${mov.amount > 0 ? 'text-teal-600' : 'text-rose-500'}`}>

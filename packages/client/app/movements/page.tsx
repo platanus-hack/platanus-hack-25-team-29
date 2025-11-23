@@ -79,7 +79,7 @@ export default function MovementsPage() {
                 console.error('Sync error data:', errorData);
 
                 if (errorData.detail?.error === 'NO_BANK_CONNECTED') {
-                    throw new Error('No bank account connected. Please connect your bank account first.');
+                    throw new Error('No hay cuenta bancaria conectada. Por favor conecta tu cuenta bancaria primero.');
                 }
 
                 // Handle different error formats
@@ -87,7 +87,7 @@ export default function MovementsPage() {
                     errorData.detail?.message ||
                     errorData.detail ||
                     errorData.message ||
-                    `Sync failed with status ${response.status}`;
+                    `Sincronización fallida con estado ${response.status}`;
 
                 throw new Error(errorMessage);
             }
@@ -102,7 +102,7 @@ export default function MovementsPage() {
 
         } catch (err: any) {
             console.error('Sync error:', err);
-            setError(err.message || 'Failed to sync data from Fintoc');
+            setError(err.message || 'Error al sincronizar datos desde Fintoc');
         } finally {
             setIsSyncing(false);
         }
@@ -117,7 +117,7 @@ export default function MovementsPage() {
             const response = await fetch(`${API_BASE_URL}/fintoc/movements`);
 
             if (!response.ok) {
-                throw new Error('Failed to fetch movements');
+                throw new Error('Error al obtener movimientos');
             }
 
             const data = await response.json();
@@ -125,7 +125,7 @@ export default function MovementsPage() {
         } catch (err: any) {
             console.error('Fetch error:', err);
             // Don't show error if endpoint doesn't exist yet
-            if (err.message !== 'Failed to fetch movements') {
+            if (err.message !== 'Error al obtener movimientos') {
                 setError(err.message);
             }
         } finally {
@@ -139,7 +139,7 @@ export default function MovementsPage() {
             const response = await fetch(`${API_BASE_URL}/fintoc/accounts`);
 
             if (!response.ok) {
-                throw new Error('Failed to fetch accounts');
+                throw new Error('Error al obtener cuentas');
             }
 
             const data = await response.json();
@@ -216,10 +216,10 @@ export default function MovementsPage() {
                     </div>
                     <div>
                         <h1 className="text-3xl font-bold tracking-tight">
-                            Movements
+                            Movimientos
                         </h1>
                         <p className="text-sm text-muted-foreground mt-1">
-                            View and manage your bank account transactions
+                            Visualiza y administra las transacciones de tu cuenta bancaria
                         </p>
                     </div>
                 </div>
@@ -231,7 +231,7 @@ export default function MovementsPage() {
                         className="gap-2"
                     >
                         <RefreshCw className={`h-4 w-4 ${isSyncing ? 'animate-spin' : ''}`} />
-                        {isSyncing ? 'Refreshing...' : 'Refresh'}
+                        {isSyncing ? 'Actualizando...' : 'Actualizar'}
                     </Button>
                 </div>
             </div>
@@ -249,11 +249,11 @@ export default function MovementsPage() {
             {/* Movements Table */}
             <Card className="shadow-sm">
                 <CardHeader>
-                    <CardTitle className="text-2xl">Transactions</CardTitle>
+                    <CardTitle className="text-2xl">Transacciones</CardTitle>
                     <CardDescription className="text-base">
-                        {filteredMovements.length} movement{filteredMovements.length !== 1 ? 's' : ''} found
+                        {filteredMovements.length} movimiento{filteredMovements.length !== 1 ? 's' : ''} encontrado{filteredMovements.length !== 1 ? 's' : ''}
                         {filteredMovements.length > itemsPerPage && (
-                            <span> • Showing {startIndex + 1}-{Math.min(endIndex, filteredMovements.length)} of {filteredMovements.length}</span>
+                            <span> • Mostrando {startIndex + 1}-{Math.min(endIndex, filteredMovements.length)} de {filteredMovements.length}</span>
                         )}
                     </CardDescription>
                 </CardHeader>
@@ -283,7 +283,7 @@ export default function MovementsPage() {
                                     className="gap-2"
                                 >
                                     <RefreshCw className={`h-4 w-4 ${isSyncing ? 'animate-spin' : ''}`} />
-                                    {isSyncing ? 'Refreshing...' : 'Refresh'}
+                                    {isSyncing ? 'Actualizando...' : 'Actualizar'}
                                 </Button>
                             </EmptyContent>
                         </Empty>
@@ -295,7 +295,7 @@ export default function MovementsPage() {
                             {totalPages > 1 && (
                                 <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-6">
                                     <p className="text-sm text-muted-foreground">
-                                        Page {currentPage} of {totalPages}
+                                        Página {currentPage} de {totalPages}
                                     </p>
                                     <Pagination>
                                         <PaginationContent className="flex-wrap justify-center">
@@ -354,7 +354,7 @@ export default function MovementsPage() {
             {/* Summary Statistics */}
             {filteredMovements.length > 0 && (
                 <div>
-                    <h2 className="text-2xl font-bold mb-4">Financial Summary</h2>
+                    <h2 className="text-2xl font-bold mb-4">Resumen Financiero</h2>
                     <SummaryStats movements={filteredMovements} />
                 </div>
             )}

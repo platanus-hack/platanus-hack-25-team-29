@@ -181,7 +181,7 @@ export default function ConnectBankPage() {
                                     <div className="bg-zinc-50 dark:bg-zinc-800/50 p-4 rounded-2xl">
                                         <div className="flex items-center gap-2 mb-2">
                                             <div className="h-2 w-2 rounded-full bg-teal-500" />
-                                            <span className="text-xs font-medium text-zinc-500 uppercase">Positions</span>
+                                            <span className="text-xs font-medium text-zinc-500 uppercase">Posiciones</span>
                                         </div>
                                         <p className="text-lg font-medium text-zinc-800">
                                             {formatCurrency(totalBalance * 0.8)}
@@ -190,7 +190,7 @@ export default function ConnectBankPage() {
                                     <div className="bg-zinc-50 dark:bg-zinc-800/50 p-4 rounded-2xl">
                                         <div className="flex items-center gap-2 mb-2">
                                             <div className="h-2 w-2 rounded-full bg-orange-500" />
-                                            <span className="text-xs font-medium text-zinc-500 uppercase">Cash</span>
+                                            <span className="text-xs font-medium text-zinc-500 uppercase">Efectivo</span>
                                         </div>
                                         <p className="text-lg font-medium text-zinc-800">
                                             {formatCurrency(totalBalance * 0.2)}
