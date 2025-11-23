@@ -1,6 +1,6 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import DeclarativeBase, sessionmaker
-from sqlalchemy.pool import NullPool
+from sqlalchemy.pool import QueuePool
 from dotenv import load_dotenv
 import os
 import logging
@@ -37,16 +37,20 @@ def get_engine():
     """Get or create database engine lazily."""
     global _engine
     if _engine is None:
-        logger.info("Creating database engine...")
+        logger.info("Creating database engine with connection pooling...")
         _engine = create_engine(
             database_url,
-            poolclass=NullPool,
+            poolclass=QueuePool,
+            pool_size=5,              # Maintain 5 persistent connections
+            max_overflow=10,          # Allow up to 15 total connections
+            pool_pre_ping=True,       # Verify connection health before use
+            pool_recycle=3600,        # Recycle connections every hour
             connect_args={
                 "connect_timeout": 10,
                 "options": "-c statement_timeout=30000"
             }
         )
-        logger.info("Database engine created successfully")
+        logger.info("Database engine created successfully with QueuePool (size=5, max=15)")
     return _engine
 
 def get_session():
