@@ -179,18 +179,6 @@ export function EnhancedToolCard({ tool, autoCollapse = true }: EnhancedToolCard
                   Completado en {tool.duration}ms
                 </div>
               )}
-
-              {/* Raw input (collapsed by default, for debugging) */}
-              {process.env.NODE_ENV === "development" && (
-                <details className="text-[10px]">
-                  <summary className="text-slate-400 uppercase font-bold tracking-wider cursor-pointer hover:text-slate-600">
-                    Input (Debug)
-                  </summary>
-                  <code className="block mt-1 text-slate-600 font-mono whitespace-pre-wrap break-all bg-slate-100 p-2 rounded">
-                    {JSON.stringify(tool.input, null, 2)}
-                  </code>
-                </details>
-              )}
             </div>
           </motion.div>
         )}
