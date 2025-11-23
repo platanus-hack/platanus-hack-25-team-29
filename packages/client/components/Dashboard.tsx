@@ -2,12 +2,11 @@
 
 import { Account, Movement } from "@/lib/types"
 import { useState } from "react"
-import { Carousel, CarouselContent, CarouselItem } from "./ui/carousel"
+import { Carousel, CarouselContent, CarouselItem, CarouselApi } from "./ui/carousel"
 import { SpendInTime } from "./charts/spend-in-time"
 import { ByCategory } from "./charts/by-category"
 import { DailySpend } from "./charts/daily-spend"
 import { FixedExpenses } from "./charts/fixed-expenses"
-import { UseEmblaCarouselType } from "embla-carousel-react"
 import { TrendingDown, TrendingUp } from "lucide-react"
 
 export default function Dashboard({ movements, accounts }: { movements: Movement[], accounts: Account[] }) {
@@ -19,7 +18,7 @@ export default function Dashboard({ movements, accounts }: { movements: Movement
     <ByCategory movements={movements} key="cat" />,
   ]
 
-  const handleSetApi = (api: UseEmblaCarouselType[1]) => {
+  const handleSetApi = (api: CarouselApi) => {
     if (api) {
       setSelectedIndex(api.selectedScrollSnap())
       api.on("select", () => {
