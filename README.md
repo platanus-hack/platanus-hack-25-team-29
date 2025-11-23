@@ -6,7 +6,7 @@
 **Tu contador personal inteligente**
 
 Lucas es tu contador personal. Se conecta con tu banco para ayudarte a entender tu dinero y tomar mejores decisiones financieras. 
-
+  
 ## 🚀 Features
 
 - **Conexión bancaria automática** via Fintoc
