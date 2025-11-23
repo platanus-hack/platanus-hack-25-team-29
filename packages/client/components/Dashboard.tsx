@@ -19,12 +19,12 @@ import {
   Search
 } from "lucide-react"
 
-export default function Dashboard({ movements, accounts }: { movements: Movement[], accounts: Account[] }) {
+export default function Dashboard({ movements = [], accounts = [] }: { movements: Movement[], accounts: Account[] }) {
   const [selectedIndex, setSelectedIndex] = useState(0)
 
-  const totalBalance = accounts.reduce((sum, account) => sum + (account.balance_current || 0), 0)
-  const totalIncome = movements.filter((mov) => mov.amount > 0).reduce((sum, mov) => sum + (mov.amount || 0), 0)
-  const totalExpenses = movements.filter((mov) => mov.amount < 0).reduce((sum, mov) => sum + (mov.amount || 0), 0)
+  const totalBalance = (accounts || []).reduce((sum, account) => sum + (account.balance_current || 0), 0)
+  const totalIncome = (movements || []).filter((mov) => mov.amount > 0).reduce((sum, mov) => sum + (mov.amount || 0), 0)
+  const totalExpenses = (movements || []).filter((mov) => mov.amount < 0).reduce((sum, mov) => sum + (mov.amount || 0), 0)
 
   const formatCurrency = (amount: number) => {
     const numberString = new Intl.NumberFormat('es-CL', {
