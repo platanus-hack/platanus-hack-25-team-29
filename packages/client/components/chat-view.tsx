@@ -403,17 +403,17 @@ export function ChatView() {
 
   return (
     <div className="flex flex-col h-screen w-full bg-slate-50 font-sans text-slate-900">
-      
       {/* Header */}
-      <div className="flex items-center justify-between px-4 md:px-8 py-4 bg-white/80 backdrop-blur-md border-b border-slate-200 sticky top-0">
-        <div className="flex items-center gap-2">
-          <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(34,197,94,0.6)]"></div>
-          <span className="font-semibold text-slate-700 ml-10 sm:ml-0">Chat con Lucas</span>
+      <div className="flex items-center justify-center py-6 bg-white/80 backdrop-blur-md border-slate-200 sticky top-0 w-full">
+        <div className="flex items-center justify-center">
+          <span className="font-semibold text-slate-700">
+            Consultas Financieras
+          </span>
         </div>
         <button
           onClick={handleClearChat}
-          className={`p-2 rounded-lg transition-all duration-200 flex items-center gap-2 text-xs md:text-sm font-medium
-            ${showClearConfirm ? 'bg-red-50 text-red-600 ring-1 ring-red-200' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-100'}`}
+          className={`absolute right-3 p-[10px] rounded-full transition-all duration-200 flex items-center gap-2 text-xs md:text-sm font-medium
+            text-red-400 ring-1 ring-red-200`}
         >
           <Trash2 size={18} />
         </button>
@@ -446,24 +446,35 @@ export function ChatView() {
       </div>
 
       {/* Input Area - MATCHING WIDTH */}
-      <div className="p-3 md:p-6 bg-white/80 backdrop-blur-md border-t border-slate-200">
+      <div className="p-3 md:p-6 bg-transparent">
         <div className="w-full max-w-4xl lg:max-w-5xl mx-auto relative">
-          <div className="relative flex items-end gap-2 bg-slate-50 border border-slate-200 rounded-2xl p-2 shadow-sm focus-within:ring-2 focus-within:ring-blue-100 focus-within:border-blue-300 transition-all">
+          <div className="relative flex justify-between items-center gap-1 bg-slate-50 border border-slate-200 rounded-full p-2 shadow-sm focus-within:ring-2 focus-within:ring-blue-100 focus-within:border-blue-300 transition-all">
             <textarea
               ref={textareaRef}
               value={input}
               onChange={(e) => dispatch(setInput(e.target.value))}
               onKeyDown={handleKeyDown}
-              placeholder="Message..."
+              placeholder="Pregunta lo que sea ..."
               disabled={isStreaming}
-              className="flex-1 bg-transparent border-none focus:ring-0 p-3 min-h-[44px] max-h-[150px] resize-none text-slate-800 placeholder-slate-400 text-base"
+              className="flex-1 bg-transparent border-none outline-0 focus:ring-0 p-3 min-h-[44px] max-h-[150px] resize-none text-slate-800 placeholder-slate-400 text-base"
               rows={1}
             />
-            <div className="pb-1 pr-1">
+            <div className="pr-0">
               {isStreaming ? (
-                 <button onClick={() => { dispatch(setIsStreaming(false)); dispatch(markLastMessageAsInterrupted()) }} className="p-2 bg-slate-200 text-slate-600 rounded-xl hover:bg-slate-300 transition-colors"><StopCircle size={20} /></button>
+                <button
+                  onClick={() => { dispatch(setIsStreaming(false)); dispatch(markLastMessageAsInterrupted()) }}
+                  className="p-2 bg-slate-200 text-slate-600 rounded-xl hover:bg-slate-300 transition-colors"
+                >
+                  <StopCircle size={20} />
+                </button>
               ) : (
-                <button onClick={sendMessage} disabled={!input.trim()} className="p-2 bg-blue-600 text-white rounded-xl disabled:opacity-50 hover:bg-blue-700 shadow-sm transition-all hover:scale-105 active:scale-95"><Send size={20} /></button>
+                <button
+                  onClick={sendMessage}
+                  disabled={!input.trim()}
+                  className="p-3 bg-[#5CB1A9] text-white rounded-full disabled:opacity-50 hover:bg-blue-700 shadow-sm transition-all hover:scale-105 active:scale-95"
+                >
+                  <Send size={20} />
+                </button>
               )}
             </div>
           </div>
