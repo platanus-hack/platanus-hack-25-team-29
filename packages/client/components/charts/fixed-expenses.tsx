@@ -10,17 +10,17 @@ import { ScrollArea } from "../ui/scroll-area"
 export function FixedExpenses({ movements }: { movements: Movement[] }) {
   const fixedExpenses = getMonthlyFixedExpenses({movements, getFixes: true})
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Costos Fijos</CardTitle>
+    <Card className="bg-green-100 border-green-300 text-green-800 shadow-none sm:shadow-md w-full">
+      <CardHeader className="-mb-4">
+        <CardTitle></CardTitle>
       </CardHeader>
-      <CardContent>
-        <ScrollArea className="h-60">
-          <Table className="">
+      <CardContent className="">
+        <ScrollArea className="sm:h-70">
+          <Table className="text-base bg-green-100 text-green-800 rounded-lg">
             <TableHeader>
               <TableRow>
-                <TableHead></TableHead>
-                <TableHead>Monto</TableHead>
+                <TableHead className="text-green-800 font-semibold">Gastos Fijos</TableHead>
+                <TableHead className="text-green-800 font-semibold">Monto</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>

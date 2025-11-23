@@ -16,7 +16,7 @@ export function ByCategory({ movements }: { movements: Movement[] }) {
   const chartData = groupedTransfers.map(group => ({
     category: group.description,
     amount: group.totalAmount,
-    fill: "var(--chart-1)",
+    fill: "white",
   }))
   const chartConfig = {
     amount: {
@@ -25,18 +25,18 @@ export function ByCategory({ movements }: { movements: Movement[] }) {
     ...groupedTransfers.reduce((acc, group) => {
       acc[group.description] = {
         label: group.description,
-        color: "var(--chart-1)",
+        color: "white",
       }
       return acc
     }, {} as Record<string, { label: string; color: string }>),
   } satisfies ChartConfig
   return (
-    <Card>
+    <Card className="h-full w-full border-none bg-amber-500 text-white">
       <CardHeader>
         <CardTitle>Gastos por Categoría</CardTitle>
       </CardHeader>
-      <CardContent>
-        <ChartContainer config={chartConfig}>
+      <CardContent className="text-white min-h-50 pt-2">
+        <ChartContainer config={chartConfig} className="[&_.recharts-cartesian-axis-tick_text]:fill-background">
           <BarChart
             accessibilityLayer
             data={chartData}
@@ -54,7 +54,7 @@ export function ByCategory({ movements }: { movements: Movement[] }) {
               width={120}
               tick={({ x, y, payload }) => {
                 const category = payload.value as string
-                const maxLen = 14
+                const maxLen = 12
                 const displayText =
                   category.length > maxLen
                     ? category.slice(0, maxLen - 1) + "…"
@@ -65,7 +65,7 @@ export function ByCategory({ movements }: { movements: Movement[] }) {
                     y={y}
                     width={100}
                     fontSize={12}
-                    fill="var(--gray-900, #18181b)"
+                    fill="white"
                     textAnchor="end"
                     alignmentBaseline="middle"
                   >
@@ -80,8 +80,8 @@ export function ByCategory({ movements }: { movements: Movement[] }) {
               content={
                 <ChartTooltipContent
                   formatter={(value) => `: $${value.toLocaleString()}`}
-                  className="space-x-2"
-                  labelClassName="space-x-2"
+                  className="gap-2"
+                  labelClassName="gap-2"
                 />
               }
             />

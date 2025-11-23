@@ -1,9 +1,6 @@
-import { SpendInTime } from "@/components/charts/spend-in-time"
-import { DailySpend } from "@/components/charts/daily-spend"
-import { ByCategory } from "@/components/charts/by-category"
-import { FixedExpenses } from "@/components/charts/fixed-expenses"
 import { format } from "date-fns"
-import { Movement } from "@/lib/types"
+import { Account, Movement } from "@/lib/types"
+import Dashboard from "@/components/Dashboard"
 
 
 export default async function DashboardPage() {
@@ -17,20 +14,13 @@ export default async function DashboardPage() {
       "Content-Type": "application/json",
     },
   })
+  const accounts = await fetch(`${API_BASE_URL}/fintoc/accounts`);
   const { movements } = await response.json();
+  const accountsData = await accounts.json();
   
   return (
-    <div className="flex min-h-screen items-center justify-center p-8">
-      <div className="w-full max-w-4xl">
-        <h1 className="text-3xl font-semibold mb-4">Dashboard</h1>
-        <div className="grid gap-4 grid-cols-2">
-          <SpendInTime movements={movements as Movement[]} />
-          <DailySpend movements={movements as Movement[]} />
-          <ByCategory movements={movements as Movement[]} />
-          <FixedExpenses movements={movements as Movement[]} />
-        </div>
-      </div>
-    </div>
+    // <Dashboard movements={[] as Movement[]} />
+    <Dashboard movements={movements as Movement[]} accounts={accountsData.accounts as Account[]} />
   )
 }
 

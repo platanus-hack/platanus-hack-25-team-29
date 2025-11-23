@@ -2,34 +2,13 @@
 
 import React, { useRef, useEffect, useState } from "react"
 import { useAppDispatch, useAppSelector } from "@/store/hooks"
-import {
-  addMessage,
-  updateLastMessage,
-  markLastMessageAsInterrupted,
-  clearAllMessages,
-  setInput,
-  clearInput,
-  setIsStreaming,
-  setToolActivity,
-  clearToolActivity,
-  resetChatUI,
-} from "@/store"
+import { addMessage, updateLastMessage, markLastMessageAsInterrupted, clearAllMessages, setInput, clearInput, setIsStreaming, setToolActivity, clearToolActivity, resetChatUI } from "@/store"
 import type { Message, ToolUse } from "@/store/types"
-
-// UI Libraries
 import { AnimatePresence, motion } from "framer-motion"
-import {
-  Send,
-  Trash2,
-  Bot,
-  User,
-  StopCircle,
-  Sparkles
-} from "lucide-react"
+import { Send, Trash2, Bot, User, StopCircle } from "lucide-react"
 import ReactMarkdown from "react-markdown"
 import remarkGfm from "remark-gfm"
-
-// Enhanced tool components
+import Image from "next/image"
 import { EnhancedToolCard } from "./enhanced-tool-card"
 import { InlineToolStatus } from "./inline-tool-status"
 
@@ -60,7 +39,7 @@ const ThinkingBubble = () => (
   >
     <div className="flex items-start max-w-[90%] md:max-w-[80%] gap-3">
       <div className="flex-shrink-0 w-8 h-8 mt-1 rounded-full bg-white border border-gray-200 flex items-center justify-center text-purple-600 shadow-sm">
-        <Sparkles size={16} />
+        <Image src="/project-logo.png" alt="Lucas" width={60} height={60} className="rounded-full" />
       </div>
       <div className="px-4 py-3 bg-white border border-gray-100 rounded-2xl rounded-tl-sm shadow-sm flex items-center gap-3">
         <span className="flex gap-1.5">
@@ -130,14 +109,14 @@ const MessageBubble = ({
               ? 'bg-blue-600 text-white'
               : 'bg-white border border-gray-200 text-purple-600'
             }`}>
-            {isUser ? <User size={15} className="md:w-5 md:h-5" /> : <Bot size={16} className="md:w-5 md:h-5" />}
+            {isUser ? <User size={15} className="md:w-5 md:h-5" /> : <Image src="/project-logo.png" alt="Lucas" width={20} height={20} className="rounded-full" />}
           </div>
 
           <div className={`flex flex-col ${isUser ? 'items-end' : 'items-start'} w-full min-w-0`}>
             {/* Name Label */}
             <div className="flex items-baseline gap-2 mb-1 px-1">
               <span className="text-xs font-medium text-gray-500 opacity-0 md:opacity-100 transition-opacity">
-                {isUser ? 'You' : 'Agent'}
+                {isUser ? 'Tu' : 'Lucas'}
               </span>
               {msg.interrupted && (
                 <span className="text-[10px] bg-orange-100 text-orange-700 px-1.5 py-0.5 rounded-md uppercase tracking-wider font-bold">

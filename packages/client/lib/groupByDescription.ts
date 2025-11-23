@@ -13,7 +13,13 @@ export function groupTransfersByDescription(movements: Movement[]): GroupedTrans
   }
 
   for (const mov of movements) {
-    const desc = mov.description?.trim() || "Sin descripción";
+    let desc = mov.description?.trim().split(" ")[0] || ["Sin", "descripción"];
+    const descArr = mov.description?.trim().split(" ") || ["Sin", "descripción"];
+    let filteredArr = descArr;
+    if (/\d/.test(descArr[0])) {
+      filteredArr = descArr.slice(1);
+    }
+    desc = filteredArr.slice(0, 2).join(" ") || "Sin descripción";
     if (!groups[desc]) {
       groups[desc] = {
         description: desc,
