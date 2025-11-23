@@ -25,18 +25,103 @@ import {
   User,
   StopCircle,
   Sparkles,
-  ArrowDown
+  ArrowDown,
+  CheckCircle2,
+  Loader2,
+  Wrench // Generic tool icon
 } from "lucide-react"
 import ReactMarkdown from "react-markdown"
 import remarkGfm from "remark-gfm"
 
-// Enhanced tool components
-import { EnhancedToolCard } from "./enhanced-tool-card"
-import { InlineToolStatus } from "./inline-tool-status"
-
+// Config
 const AGENT_API_URL = process.env.NEXT_PUBLIC_AGENT_API_URL || process.env.NEXT_PUBLIC_API_URL || 'https://platanus-grupo29-681510028004.us-central1.run.app'
 
-// --- 1. Components ---
+// --- 1. Utilities ---
+
+/**
+ * Formats technical tool names into human-readable labels.
+ * e.g. "mcp__google__search" -> "Google Search"
+ * e.g. "get_weather" -> "Get Weather"
+ */
+const formatToolName = (rawName: string) => {
+  if (!rawName) return "Herramienta Desconocida";
+  
+  // 1. Remove common technical prefixes like 'mcp__'
+  let cleaned = rawName.replace(/^mcp__/, '');
+  
+  // 2. Split by underscores or double underscores
+  const words = cleaned.split(/[__|_]+/);
+  
+  // 3. Capitalize first letter of each word
+  return words.map(word => 
+    word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
+  ).join(' ');
+}
+
+// --- 2. Enhanced Tool Components (Clean & Minimal) ---
+
+/**
+ * Renders a single tool execution row.
+ * Purely visual: Status Icon + Clean Name + Time.
+ * No raw inputs/JSON.
+ */
+const ToolRow = ({ tool }: { tool: ToolUse }) => {
+  const isExecuting = tool.status === 'executing'
+  const displayName = formatToolName(tool.name)
+
+  return (
+    <div className="flex items-center justify-between py-2 px-3 border-b border-slate-50 last:border-0 bg-white first:rounded-t-lg last:rounded-b-lg">
+      <div className="flex items-center gap-3 overflow-hidden">
+        {/* Status Icon */}
+        <div className={`shrink-0 flex items-center justify-center w-6 h-6 rounded-full border 
+          ${isExecuting 
+            ? 'bg-blue-50 border-blue-100 text-blue-500' 
+            : 'bg-emerald-50 border-emerald-100 text-emerald-500'}`}>
+          {isExecuting ? (
+            <Loader2 size={12} className="animate-spin" />
+          ) : (
+            <CheckCircle2 size={12} />
+          )}
+        </div>
+        
+        {/* Clean Name */}
+        <span className={`text-xs font-medium truncate transition-colors
+          ${isExecuting ? 'text-slate-700' : 'text-slate-500'}`}>
+          {displayName}
+        </span>
+      </div>
+
+      {/* Duration / Status Text */}
+      <span className="text-[10px] text-slate-300 font-medium shrink-0 pl-2">
+        {isExecuting ? 'Procesando...' : `${tool.duration ? (tool.duration / 1000).toFixed(1) + 's' : 'Listo'}`}
+      </span>
+    </div>
+  )
+}
+
+/**
+ * Groups multiple tools into a cohesive "Status Block".
+ * Minimalist design: just a rounded container with rows.
+ */
+const ToolChain = ({ tools }: { tools: ToolUse[] }) => {
+  if (!tools || tools.length === 0) return null;
+
+  return (
+    <motion.div 
+      initial={{ opacity: 0, y: -5 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="mb-4 w-full max-w-full"
+    >
+      <div className="bg-white border border-slate-100 rounded-xl shadow-sm overflow-hidden">
+        {tools.map((tool, i) => (
+          <ToolRow key={tool.id || i} tool={tool} />
+        ))}
+      </div>
+    </motion.div>
+  )
+}
+
+// --- 3. Standard UI Components ---
 
 const SmoothCursor = () => (
   <motion.span
@@ -55,7 +140,6 @@ const ThinkingBubble = () => (
     exit={{ opacity: 0, scale: 0.9 }}
     className="flex w-full justify-start mb-6"
   >
-    {/* Aligning thinking bubble with the Agent Avatar column */}
     <div className="flex gap-3 max-w-[90%] md:max-w-[85%]">
       <div className="shrink-0 w-8 h-8 rounded-full bg-white border border-gray-200 flex items-center justify-center">
          <Sparkles size={16} className="text-teal-500" />
@@ -71,7 +155,7 @@ const ThinkingBubble = () => (
             />
           ))}
         </span>
-        <span className="text-xs text-gray-400 font-medium tracking-wide">Analizando...</span>
+        <span className="text-xs text-gray-400 font-medium tracking-wide">Analizando solicitud</span>
       </div>
     </div>
   </motion.div>
@@ -88,22 +172,9 @@ const MessageBubble = ({
 }) => {
   const isUser = msg.role === 'user'
 
-  // Find currently executing tool for inline status
-  const executingTool = isLast && isStreaming && msg.toolUses
-    ? msg.toolUses.find(t => t.status === "executing")
-    : null
-
   return (
     <div className={`flex flex-col w-full mb-6 ${isUser ? 'items-end' : 'items-start'}`}>
       
-      {!isUser && executingTool && (
-        <div className="pl-11 mb-2 w-full max-w-3xl">
-           <AnimatePresence>
-            <InlineToolStatus tool={executingTool} />
-          </AnimatePresence>
-        </div>
-      )}
-
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
@@ -120,12 +191,8 @@ const MessageBubble = ({
           </div>
         </div>
 
-        {/* 
-            BUBBLE CONTAINER 
-            User: Compact, colored.
-            Agent: Wide, White, Bordered (The "Card" look).
-        */}
-        <div className={`flex flex-col min-w-0 max-w-[85%] md:max-w-[85%] lg:max-w-[80%]
+        {/* BUBBLE CONTENT */}
+        <div className={`flex flex-col min-w-0 max-w-[95%] md:max-w-[85%] lg:max-w-[80%]
             ${isUser ? 'items-end' : 'items-start w-full'}`
         }>
           
@@ -141,22 +208,20 @@ const MessageBubble = ({
             )}
           </div>
 
-          {/* THE BUBBLE ITSELF */}
+          {/* 
+             Agent Logic: 
+             Render ToolChain above text. No debug prints.
+          */}
+          {!isUser && msg.toolUses && msg.toolUses.length > 0 && (
+            <ToolChain tools={msg.toolUses} />
+          )}
+
+          {/* THE TEXT BUBBLE */}
           <div className={`relative px-4 py-3 md:px-6 md:py-4 text-sm md:text-base leading-relaxed shadow-sm
             ${isUser
               ? 'bg-[#e0f5f3] border border-[#bce3de] text-slate-800 rounded-2xl rounded-tr-sm'
-              // Agent Bubble: "Bordered kind of bubble" but capable of holding tables
               : 'bg-white border border-gray-200 text-slate-900 rounded-2xl rounded-tl-sm w-full overflow-hidden' 
             }`}>
-
-            {/* Tools */}
-            {msg.toolUses && msg.toolUses.length > 0 && (
-               <div className="mb-4 flex flex-col gap-2 w-full">
-                 {msg.toolUses.map((tool, i) => (
-                   <EnhancedToolCard key={tool.id || i} tool={tool} autoCollapse={true} />
-                 ))}
-               </div>
-            )}
 
             {/* Content */}
             {isUser ? (
@@ -169,8 +234,7 @@ const MessageBubble = ({
                     h1: ({children}) => <h1 className="text-xl font-bold mb-3 mt-4 text-slate-800">{children}</h1>,
                     h2: ({children}) => <h2 className="text-lg font-semibold mb-2 mt-4 text-slate-800">{children}</h2>,
                     p: ({children}) => <p className="mb-3 last:mb-0 text-slate-700 leading-7">{children}</p>,
-                    a: ({href, children}) => <a href={href} className="text-teal-600 font-medium hover:underline break-all" target="_blank">{children}</a>,
-                    // Code: Horizontal scroll container
+                    a: ({href, children}) => <a href={href} className="text-teal-600 font-medium hover:underline break-all" target="_blank" rel="noreferrer">{children}</a>,
                     code: ({className, children}) => {
                       const isInline = !className;
                       return isInline
@@ -181,7 +245,6 @@ const MessageBubble = ({
                     },
                     ul: ({children}) => <ul className="list-disc pl-5 mb-3 space-y-1 text-slate-700">{children}</ul>,
                     ol: ({children}) => <ol className="list-decimal pl-5 mb-3 space-y-1 text-slate-700">{children}</ol>,
-                    // Table: Wrapper for horizontal scrolling
                     table: ({children}) => (
                       <div className="w-full overflow-x-auto my-4 rounded-lg border border-gray-200 bg-white">
                         <table className="min-w-full divide-y divide-gray-100 text-sm">{children}</table>
@@ -203,7 +266,7 @@ const MessageBubble = ({
   )
 }
 
-// --- Main Chat View ---
+// --- 4. Main Chat View ---
 
 export function ChatView() {
   const dispatch = useAppDispatch()
@@ -291,7 +354,6 @@ export function ChatView() {
     }
   }
 
-  // (sendMessage function logic remains identical to previous version - omitted for brevity, ensure you include it)
   const sendMessage = async () => {
     if (!input.trim() || isStreaming) return
 
@@ -345,6 +407,7 @@ export function ChatView() {
               setHasReceivedFirstToken(true); 
 
               if (parsed.type === "text") {
+                // Mark pending tools as completed if we start receiving text
                 currentToolUses = currentToolUses.map(tool => {
                   if (tool.status === "executing") {
                     return { ...tool, status: "completed" as const, duration: tool.timestamp ? Date.now() - tool.timestamp : undefined }
@@ -352,6 +415,7 @@ export function ChatView() {
                   return tool
                 })
                 currentAssistantMessage += parsed.content
+                
                 if (assistantMessageCreated) {
                   dispatch(updateLastMessage({ content: currentAssistantMessage, toolUses: [...currentToolUses] }))
                 } else {
@@ -367,6 +431,7 @@ export function ChatView() {
                   timestamp: Date.now()
                 };
                 currentToolUses.push(toolUse);
+                
                 if (!assistantMessageCreated) {
                     dispatch(addMessage({ role: 'assistant', content: '', toolUses: [...currentToolUses] }))
                     assistantMessageCreated = true
@@ -376,11 +441,13 @@ export function ChatView() {
               } else if (parsed.type === "tool_complete") {
                 const toolIndex = currentToolUses.findIndex(t => t.id === parsed.id)
                 if (toolIndex !== -1) {
-                  currentToolUses[toolIndex] = { ...currentToolUses[toolIndex], status: "completed", duration: currentToolUses[toolIndex].timestamp ? Date.now() - currentToolUses[toolIndex].timestamp! : undefined }
+                  currentToolUses[toolIndex] = { 
+                    ...currentToolUses[toolIndex], 
+                    status: "completed", 
+                    duration: currentToolUses[toolIndex].timestamp ? Date.now() - currentToolUses[toolIndex].timestamp! : undefined 
+                  }
                   dispatch(updateLastMessage({ content: currentAssistantMessage, toolUses: [...currentToolUses] }))
                 }
-              } else if (parsed.type === "error") {
-                 // handle error...
               }
             } catch (e) { console.error(e) }
           }
@@ -395,9 +462,7 @@ export function ChatView() {
     }
   }
 
-  // --- LAYOUT ---
   return (
-    // h-[100dvh] ensures it fits perfectly on mobile viewports including navigation bars
     <div className="flex flex-col h-[100dvh] w-full bg-slate-50 font-sans text-slate-900 relative">
       
       {/* Header */}
@@ -443,11 +508,6 @@ export function ChatView() {
             {isStreaming && !hasReceivedFirstToken && <ThinkingBubble />}
           </AnimatePresence>
           
-          {/* 
-            PADDING BOTTOM SPACER:
-            Mobile: 80px (Nav) + 80px (Input) = 160px
-            Desktop: 80px (Input) + 20px buffer = 100px
-          */}
           <div ref={messagesEndRef} className="h-[160px] md:h-[120px]" />
         </div>
       </div>
@@ -460,7 +520,6 @@ export function ChatView() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 10 }}
             onClick={() => scrollToBottom()}
-            // Positioned above the Input Area (Mobile: bottom-44, Desktop: bottom-28)
             className="absolute bottom-44 md:bottom-28 left-1/2 -translate-x-1/2 bg-slate-800 text-white shadow-lg rounded-full p-2 z-30 flex items-center gap-2 px-4 text-xs font-medium hover:bg-slate-700 transition-colors"
           >
             <ArrowDown size={14} />
@@ -469,11 +528,7 @@ export function ChatView() {
         )}
       </AnimatePresence>
 
-      {/* Input Area - POSITIONING FIX */}
-      {/* 
-         Mobile: Fixed at bottom-20 (80px, exactly above BottomNav) 
-         Desktop: Fixed at bottom-0.
-      */}
+      {/* Input Area */}
       <div className="fixed left-0 right-0 bottom-20 md:bottom-0 bg-slate-50/80 backdrop-blur-md z-40 border-t border-slate-200">
         <div className="w-full max-w-3xl lg:max-w-4xl mx-auto px-4 py-3 md:py-6">
           <div className="relative flex items-end gap-2 bg-white border border-slate-300 rounded-[24px] p-1.5 shadow-sm focus-within:ring-2 focus-within:ring-teal-100 focus-within:border-teal-400 transition-all">
@@ -506,7 +561,7 @@ export function ChatView() {
               )}
             </div>
           </div>
-          {/* Desktop Spacer so content isn't behind the Floating Nav Pill if user types a lot */}
+          {/* Spacer */}
           <div className="hidden md:block h-12" />
         </div>
       </div>
