@@ -16,8 +16,9 @@ export default async function DashboardPage() {
     headers: {
       "Content-Type": "application/json",
     },
-  }).then(res => res.json());
-
+  })
+  const { movements } = await response.json();
+  
   return (
     <div className="flex min-h-screen items-center justify-center p-8">
       <div className="w-full max-w-4xl">
