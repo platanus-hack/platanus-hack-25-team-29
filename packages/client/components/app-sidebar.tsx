@@ -1,6 +1,12 @@
+"use client"
+
 import { Sidebar, SidebarContent, SidebarFooter, SidebarGroup, SidebarGroupLabel, SidebarHeader, SidebarGroupContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton } from "@/components/ui/sidebar"
 import { BarChart3, MessageCircle, Wallet, ArrowLeftRight, Cog } from "lucide-react"
+import { Sheet, SheetTrigger, SheetContent, SheetClose, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import Link from "next/link"
+import { Button } from "./ui/button";
+import { MenuIcon } from "lucide-react";
+import { usePathname } from "next/navigation";
 
 
 const items = [
@@ -31,13 +37,22 @@ const items = [
   }
 ]
 
+// Mapeo de rutas a títulos en español para el header móvil
+const routeTitles: Record<string, string> = {
+  "connect": "Conectar Cuenta",
+  "chat": "Chat",
+  "dashboard": "Dashboard",
+  "movements": "Movimientos",
+  "settings": "Configuración",
+}
+
 export function AppSidebar() {
   return (
     <Sidebar>
-      <SidebarHeader />
+      <SidebarHeader/>
       <SidebarContent>
         <SidebarGroup />
-        <SidebarGroupLabel>Lucas</SidebarGroupLabel>
+        <SidebarGroupLabel className="pl-2">Lucas</SidebarGroupLabel>
         <SidebarGroupContent>
           <SidebarMenu>
             {items.map((item) => (
@@ -56,5 +71,42 @@ export function AppSidebar() {
       </SidebarContent>
       <SidebarFooter />
     </Sidebar>
+  )
+}
+
+
+export function MobileSidebarContent() {
+  const pathname = usePathname()
+  const currentRoute = pathname?.split("/")[1] || ""
+  const currentTitle = routeTitles[currentRoute] || "Lucas"
+
+  return (
+    <Sheet >
+      <div className="border w-full flex md:hidden absolute gap-3 items-center">
+        <SheetTrigger asChild className="z-20">
+          <Button variant="ghost" className="text-foreground m-1 h-12 px-0 bg-background">
+            <MenuIcon className="size-8 text-foreground" />
+          </Button>
+        </SheetTrigger>
+        <h1 className="text-xl font-semibold">
+          {currentTitle}
+        </h1>
+      </div>
+      <SheetContent className="w-[250px] text-foreground gap-0 flex flex-col max-h-full" side="left">
+        <SheetHeader className="p-4 mb-4">
+          <SheetTitle>Lucas</SheetTitle>
+        </SheetHeader>
+        {
+          items.map((item) => (
+            <SheetClose asChild key={item.title}>
+              <Link href={item.url} className="flex items-center gap-1 p-2 pl-4 hover:bg-accent rounded-md">
+                <item.icon className="size-5 mr-2" />
+                {item.title}
+              </Link>
+            </SheetClose>
+          ))
+        }
+      </SheetContent>
+    </Sheet>
   )
 }

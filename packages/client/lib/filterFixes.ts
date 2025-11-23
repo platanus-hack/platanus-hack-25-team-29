@@ -8,6 +8,11 @@ import { Movement } from "@/lib/types"
  */
 export function getMonthlyFixedExpenses({movements, getFixes=true}: {movements: Movement[], getFixes?: boolean}): Movement[] {
 
+  // Validar que movements exista
+  if (!movements || !Array.isArray(movements)) {
+    return []
+  }
+
   // Filtrar solo gastos (amount negativo) y que tengan campos necesarios
   const gastos = movements.filter(
     (mov) =>
