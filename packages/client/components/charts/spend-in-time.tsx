@@ -15,7 +15,7 @@ const chartConfig = {
   },
 } satisfies ChartConfig
 
-export const SpendInTime = memo(function SpendInTime({ movements }: { movements: Movement[] }) {
+export const SpendInTime = memo(function SpendInTime({ movements, transparent = false }: { movements: Movement[], transparent?: boolean }) {
   // Memoize months array to avoid recreation on every render
   const months = useMemo(() => {
     const today = new Date()
@@ -55,13 +55,13 @@ export const SpendInTime = memo(function SpendInTime({ movements }: { movements:
 
 
   return (
-    <Card className="h-full w-full border-none bg-orange-800 text-white">
-      <CardHeader>
+    <Card className={`h-full w-full border-none ${transparent ? 'bg-transparent shadow-none' : 'bg-orange-800'} text-white`}>
+      <CardHeader className={transparent ? 'px-2 py-2' : ''}>
         <CardTitle>Gasto Mensual</CardTitle>
         <CardDescription className="text-white">Últimos 12 meses</CardDescription>
       </CardHeader>
-      <CardContent className="text-white min-h-50 pt-2">
-        <ChartContainer config={chartConfig} className="[&_.recharts-cartesian-axis-tick_text]:fill-background">
+      <CardContent className={`text-white ${transparent ? 'px-2 py-2' : 'pt-2'}`}>
+        <ChartContainer config={chartConfig} className="[&_.recharts-cartesian-axis-tick_text]:fill-background h-full">
           <LineChart
             accessibilityLayer
             data={chartData}

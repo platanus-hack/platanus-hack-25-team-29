@@ -76,7 +76,7 @@ function getCurrentMonthChartData(movements: Movement[], budget: number) {
   return chartData
 }
 
-export const DailySpend = memo(function DailySpend({ movements }: { movements: Movement[] }) {
+export const DailySpend = memo(function DailySpend({ movements, transparent = false }: { movements: Movement[], transparent?: boolean }) {
   // Move localStorage access to state with useEffect to avoid SSR issues
   const [budget, setBudget] = useState(500000)
 
@@ -96,15 +96,15 @@ export const DailySpend = memo(function DailySpend({ movements }: { movements: M
   )
 
   return (
-    <Card className="h-full w-full border-none bg-teal-600 text-white">
-      <CardHeader>
+    <Card className={`h-full w-full border-none ${transparent ? 'bg-transparent shadow-none' : 'bg-teal-600'} text-white`}>
+      <CardHeader className={transparent ? 'px-2 py-2' : ''}>
         <CardTitle>Gasto Acumulado (mes actual)</CardTitle>
         <CardDescription className="text-white">
           Comparación entre gasto real acumulado y objetivo mensual
         </CardDescription>
       </CardHeader>
-      <CardContent className="text-white min-h-50 pt-2">
-        <ChartContainer config={chartConfig} className="[&_.recharts-cartesian-axis-tick_text]:fill-background">
+      <CardContent className={`text-white ${transparent ? 'px-2 py-2' : 'pt-2'}`}>
+        <ChartContainer config={chartConfig} className="[&_.recharts-cartesian-axis-tick_text]:fill-background h-full">
           <LineChart
             accessibilityLayer
             data={chartData}

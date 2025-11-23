@@ -8,7 +8,7 @@ import { groupTransfersByDescription } from "@/lib/groupByDescription"
 import { memo, useMemo } from "react"
 
 
-export const ByCategory = memo(function ByCategory({ movements }: { movements: Movement[] }) {
+export const ByCategory = memo(function ByCategory({ movements, transparent = false }: { movements: Movement[], transparent?: boolean }) {
   // Memoize expensive grouping and filtering operations
   const groupedTransfers = useMemo(() => {
     const grouped = groupTransfersByDescription(movements)
@@ -40,12 +40,12 @@ export const ByCategory = memo(function ByCategory({ movements }: { movements: M
     }, {} as Record<string, { label: string; color: string }>),
   } satisfies ChartConfig), [groupedTransfers])
   return (
-    <Card className="h-full w-full border-none bg-amber-500 text-white">
-      <CardHeader>
+    <Card className={`h-full w-full border-none ${transparent ? 'bg-transparent shadow-none' : 'bg-amber-500'} text-white`}>
+      <CardHeader className={transparent ? 'px-2 py-2' : ''}>
         <CardTitle>Gastos por Categoría</CardTitle>
       </CardHeader>
-      <CardContent className="text-white min-h-50 pt-2">
-        <ChartContainer config={chartConfig} className="[&_.recharts-cartesian-axis-tick_text]:fill-background">
+      <CardContent className={`text-white ${transparent ? 'px-2 py-2' : 'pt-2'}`}>
+        <ChartContainer config={chartConfig} className="[&_.recharts-cartesian-axis-tick_text]:fill-background h-full">
           <BarChart
             accessibilityLayer
             data={chartData}

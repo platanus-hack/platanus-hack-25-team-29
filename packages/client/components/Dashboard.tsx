@@ -86,8 +86,8 @@ export default function Dashboard({ movements = [], accounts = [] }: { movements
 
   // Memoize slides to prevent unnecessary re-renders of chart components
   const slides = useMemo(() => [
-    <SpendInTime movements={movements} key="spend" />,
-    <DailySpend movements={movements} key="daily" />,
+    <SpendInTime movements={movements} transparent key="spend" />,
+    <DailySpend movements={movements} transparent key="daily" />,
   ], [movements])
 
   const handleSetApi = useCallback((api: CarouselApi) => {
@@ -212,23 +212,18 @@ export default function Dashboard({ movements = [], accounts = [] }: { movements
               </div>
               <div className="flex gap-2">
                  <span className="text-[10px] bg-white/20 px-2 py-1 rounded-lg backdrop-blur-sm">Gráfico</span>
-                 <span className="text-[10px] bg-white/10 px-2 py-1 rounded-lg backdrop-blur-sm">Tabla</span>
               </div>
             </div>
             
-            {/* Chart Area - Using your existing component adapted slightly */}
-            <div className="h-40 w-full mt-4 -ml-2">
-               {/* Note: Ensure SpendInTime can accept className or style to handle transparent background if needed. 
-                   For now, putting it in a container. */}
-               <div className="mix-blend-screen opacity-90">
-                  <Carousel setApi={handleSetApi}>
-                    <CarouselContent>
-                        {slides.map((slide, i) => (
-                          <CarouselItem key={i}>{slide}</CarouselItem>
-                        ))}
-                    </CarouselContent>
-                  </Carousel>
-               </div>
+            {/* Chart Area */}
+            <div className="h-64 w-full mt-4">
+              <Carousel setApi={handleSetApi}>
+                <CarouselContent>
+                  {slides.map((slide, i) => (
+                    <CarouselItem key={i}>{slide}</CarouselItem>
+                  ))}
+                </CarouselContent>
+              </Carousel>
             </div>
             
             {/* Pagination Dots for Card */}
