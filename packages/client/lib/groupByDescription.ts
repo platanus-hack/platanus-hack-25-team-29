@@ -8,6 +8,9 @@ type GroupedTransfer = {
 
 export function groupTransfersByDescription(movements: Movement[]): GroupedTransfer[] {
   const groups: Record<string, GroupedTransfer> = {};
+  if (!movements || !Array.isArray(movements)) {
+    return [];
+  }
 
   for (const mov of movements) {
     const desc = mov.description?.trim() || "Sin descripción";

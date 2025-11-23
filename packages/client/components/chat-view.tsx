@@ -402,10 +402,10 @@ export function ChatView() {
     <div className="flex flex-col h-screen w-full bg-slate-50 font-sans text-slate-900">
       
       {/* Header */}
-      <div className="flex items-center justify-between px-4 md:px-8 py-4 bg-white/80 backdrop-blur-md border-b border-slate-200 sticky top-0 z-10">
+      <div className="flex items-center justify-between px-4 md:px-8 py-4 bg-white/80 backdrop-blur-md border-b border-slate-200 sticky top-0">
         <div className="flex items-center gap-2">
           <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(34,197,94,0.6)]"></div>
-          <span className="font-semibold text-slate-700">Chat con Lucas</span>
+          <span className="font-semibold text-slate-700 ml-10 sm:ml-0">Chat con Lucas</span>
         </div>
         <button
           onClick={handleClearChat}
@@ -426,7 +426,7 @@ export function ChatView() {
                 <Bot className="text-blue-500 w-8 h-8" />
               </div>
               <h2 className="text-xl font-semibold text-slate-800 mb-2">How can I help?</h2>
-              <p className="text-sm text-slate-500">I'm ready to assist.</p>
+              <p className="text-sm text-slate-500">I&apos;m ready to assist.</p>
             </div>
           )}
 
