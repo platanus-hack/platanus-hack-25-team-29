@@ -5,6 +5,8 @@ import { FixedExpenses } from "@/components/charts/fixed-expenses"
 import { format } from "date-fns"
 import { Movement } from "@/lib/types"
 
+// Force dynamic rendering - fetch fresh data on every request
+export const dynamic = 'force-dynamic'
 
 export default async function DashboardPage() {
   const today = new Date()
@@ -18,7 +20,7 @@ export default async function DashboardPage() {
     },
   })
   const { movements } = await response.json();
-  
+
   return (
     <div className="flex min-h-screen items-center justify-center p-8">
       <div className="w-full max-w-4xl">
